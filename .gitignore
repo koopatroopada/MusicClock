@@ -1,0 +1,30 @@
+# Android / Gradle 构建产物
+/android/build/
+/android/app/build/
+/android/.gradle/
+/local.properties
+/android/local.properties
+.gradle/
+*.iml
+/android/.idea/
+captures/
+
+# 本地工作区（含私人笔记，不入库）
+/.workbuddy/
+/.tmp/
+/.tmp_check.js
+/HANDOFF.md
+/handoff-*.md
+/视频素材清单.md
+
+# 历史版本 APK，只保留当前版本
+/番茄专注-1.1.1.apk
+/番茄专注-1.1.2.apk
+/番茄专注-1.1.3.apk
+/番茄专注-1.1.4.apk
+/番茄专注-1.1.5.apk
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini

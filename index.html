@@ -1,0 +1,4282 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="cool">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" id="themeColorMeta" content="#e7ebf2" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="番茄专注" />
+<meta name="apple-mobile-web-app-title" content="番茄专注" />
+<meta name="format-detection" content="telephone=no" />
+<title>番茄专注 · 视频专注钟</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<script>
+try {
+  var savedData = JSON.parse(localStorage.getItem('fanqie.data.v1'));
+  if (savedData && savedData.theme) document.documentElement.dataset.theme = savedData.theme;
+} catch (error) {}
+</script>
+<style>
+  [hidden]:not([hidden="until-found" i]) { display: none !important; }
+
+  :root {
+    --phone-screen-width: 390px;
+    --phone-screen-height: 844px;
+    --phone-bezel: 10px;
+    --phone-outer-radius: 52px;
+    --phone-screen-radius: 42px;
+    --phone-safe-top: 50px;
+    --phone-safe-bottom: 29px;
+    --phone-system-fg: #17181a;
+    --phone-screen-bg: #f8f8f9;
+    --phone-stage-bg: #eaebee;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    background:
+      radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+      var(--phone-stage-bg, #eaebee);
+    color: #191a1d;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: calc(var(--phone-screen-width, 390px) + var(--phone-bezel, 10px) * 2);
+    height: calc(var(--phone-screen-height, 844px) + var(--phone-bezel, 10px) * 2);
+    padding: var(--phone-bezel, 10px);
+    border-radius: var(--phone-outer-radius, 52px);
+    background:
+      linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+      linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.13),
+      inset 0 0 0 2px rgba(0,0,0,.85),
+      0 32px 68px -20px rgba(10,12,16,.52),
+      0 10px 24px -10px rgba(10,12,16,.32);
+    isolation: isolate;
+  }
+
+  .phone-frame::before,
+  .phone-frame::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 96px;
+    bottom: 96px;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+  }
+  .phone-frame::before { left: 0; }
+  .phone-frame::after { right: 0; }
+
+  .hardware-button {
+    position: absolute;
+    width: 4px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+    box-shadow: inset 0 1px rgba(255,255,255,.08);
+  }
+  .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+  .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+
+  .phone-screen {
+    position: relative;
+    width: var(--phone-screen-width, 390px);
+    height: var(--phone-screen-height, 844px);
+    overflow: hidden;
+    border-radius: var(--phone-screen-radius, 42px);
+    background: var(--phone-screen-bg, #f8f8f9);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+
+  .phone-content {
+    position: absolute;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-top: var(--phone-safe-top, 50px);
+    padding-bottom: var(--phone-safe-bottom, 29px);
+    background: var(--phone-screen-bg, #f8f8f9);
+  }
+  .phone-content::-webkit-scrollbar { display: none; }
+
+  .camera-dot {
+    position: absolute;
+    z-index: 20;
+    top: 13px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.06);
+    pointer-events: none;
+  }
+
+  .status-bar {
+    position: absolute;
+    z-index: 15;
+    inset: 0 0 auto;
+    height: var(--phone-safe-top, 50px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
+    align-items: start;
+    padding: 14px 20px 0;
+    color: var(--phone-system-fg, #17181a);
+    opacity: .8;
+    pointer-events: none;
+  }
+  .status-time {
+    justify-self: start;
+    display: flex;
+    align-items: center;
+    height: 15px;
+    font-size: 14px;
+    font-weight: 560;
+    line-height: 1;
+    letter-spacing: .01em;
+  }
+  .status-cutout-zone { width: 56px; }
+  .status-icons {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    height: 15px;
+    gap: 6px;
+  }
+  .status-icons svg {
+    display: block;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.35;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .status-icons .connectivity { width: 15px; height: 12px; }
+  .status-icons .wifi { width: 15px; height: 12px; }
+  .status-icons .battery { width: 19px; height: 11px; }
+
+  .gesture-indicator {
+    position: absolute;
+    z-index: 20;
+    left: 50%;
+    bottom: 8px;
+    width: 96px;
+    height: 4px;
+    transform: translateX(-50%);
+    border-radius: 99px;
+    background: var(--phone-system-fg, #17181a);
+    opacity: .86;
+    pointer-events: none;
+  }
+
+  @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+  @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+  @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+  @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+  @media (max-width: 480px) {
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavior: none; }
+    body { padding: 0; display: block; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+    .phone-frame {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      padding: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+      zoom: 1;
+    }
+    .phone-frame::before, .phone-frame::after, .hardware-button,
+    .status-bar, .camera-dot, .gesture-indicator { display: none !important; }
+    .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    :root {
+      --phone-safe-top: calc(env(safe-area-inset-top, 0px) + 12px);
+      --phone-safe-bottom: 0px;
+    }
+    .tabbar { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5px); }
+    .screen-player { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+    .field input, .field select, .field textarea,
+    .topic-add input, .search input { font-size: 16px; }
+    button, a, input, select, textarea { touch-action: manipulation; }
+  }
+</style>
+<style>
+@layer od-layout {
+  /* OD-LAYOUT-PRIMITIVES v1 */
+  [hidden]:not([hidden="until-found" i]) { display: none !important; }
+  dialog:not([open]) { display: none !important; }
+
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  .od-icon { display: inline-block; inline-size: var(--od-icon-size, 1em); block-size: var(--od-icon-size, 1em); flex: none; }
+
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }
+  .od-nowrap  { white-space: nowrap; }
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; }
+
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+:root [hidden]:where(:not([hidden="until-found" i])) { display: none; }
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<style>
+  html[data-theme="cool"] {
+    --bg: #e7ebf2;
+    --stage: #dfe4ed;
+    --stage-glow: rgba(255,255,255,.72);
+    --text: #26303f;
+    --muted: #586577;
+    --faint: #7d8b9e;
+    --accent: #3f5fd0;
+    --accent-fg: #3550b8;
+    --accent-ink: #ffffff;
+    --accent-soft: #c9d5f4;
+    --danger: #a52933;
+    --danger-btn: #a52933;
+    --danger-btn-ink: #ffffff;
+    --sh-dark: rgba(116,134,162,.36);
+    --sh-light: rgba(255,255,255,.94);
+    --line: rgba(38,48,63,.09);
+    --focus: #2c49b8;
+    --phone-system-fg: #1c2430;
+  }
+  html[data-theme="cream"] {
+    --bg: #efe4d1;
+    --stage: #e8dbc5;
+    --stage-glow: rgba(255,252,243,.8);
+    --text: #3a3125;
+    --muted: #675843;
+    --faint: #8a7a63;
+    --accent: #8a5a22;
+    --accent-fg: #7a4c17;
+    --accent-ink: #fff8ec;
+    --accent-soft: #ddc9a8;
+    --danger: #96301f;
+    --danger-btn: #96301f;
+    --danger-btn-ink: #fff8ef;
+    --sh-dark: rgba(148,120,82,.32);
+    --sh-light: rgba(255,252,243,.95);
+    --line: rgba(58,49,37,.1);
+    --focus: #6d4516;
+    --phone-system-fg: #3a3125;
+  }
+  html[data-theme="lemon"] {
+    --bg: #f2d451;
+    --stage: #e5c23f;
+    --stage-glow: rgba(255,250,205,.75);
+    --stage-layer:
+      radial-gradient(62% 55% at 14% 16%, rgba(255,252,225,.55), transparent 62%),
+      radial-gradient(55% 50% at 88% 84%, rgba(126,150,40,.38), transparent 66%);
+    --app-glow:
+      radial-gradient(92% 60% at 6% 0%, rgba(255,251,221,.55), transparent 62%),
+      radial-gradient(70% 52% at 98% 16%, rgba(255,235,130,.5), transparent 66%),
+      radial-gradient(90% 62% at 88% 100%, rgba(221,165,30,.3), transparent 68%),
+      radial-gradient(62% 46% at 0% 92%, rgba(128,154,38,.26), transparent 66%);
+    --panel-bg: linear-gradient(150deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 58%), var(--bg);
+    --text: #352d0c;
+    --muted: #635217;
+    --faint: #857327;
+    --accent: #443a05;
+    --accent-fg: #3a3104;
+    --accent-ink: #ffeeb6;
+    --accent-soft: #d8bb3d;
+    --accent-2: #7f8d20;
+    --accent-grad: linear-gradient(135deg, #3f3506 0%, #565112 58%, #6f6d1b 100%);
+    --chip-bg: linear-gradient(135deg, #d3b83e 0%, #e8d57c 100%);
+    --progress-grad: linear-gradient(90deg, #3f3506 0%, #7f8d20 62%, #bcc55a 100%);
+    --leaf: #5f6f15;
+    --danger: #8a2214;
+    --danger-btn: #7c1d10;
+    --danger-btn-ink: #ffe9d9;
+    --sh-dark: rgba(148,116,0,.3);
+    --sh-light: rgba(255,250,205,.9);
+    --line: rgba(53,45,12,.12);
+    --focus: #3a3104;
+    --phone-system-fg: #352d0c;
+  }
+  html[data-theme="dragonfruit"] {
+    --bg: #c22b64;
+    --stage: #9e1c4b;
+    --stage-glow: rgba(255,170,200,.28);
+    --stage-layer:
+      radial-gradient(60% 50% at 84% 10%, rgba(255,110,150,.28), transparent 62%),
+      radial-gradient(60% 55% at 8% 92%, rgba(60,4,28,.55), transparent 66%);
+    --app-glow:
+      radial-gradient(80% 52% at 92% 4%, rgba(255,105,140,.18), transparent 64%),
+      radial-gradient(60% 44% at 4% 26%, rgba(255,180,205,.05), transparent 66%),
+      radial-gradient(100% 66% at 90% 100%, rgba(78,6,36,.34), transparent 68%),
+      radial-gradient(64% 50% at 0% 98%, rgba(96,12,50,.3), transparent 66%);
+    --panel-bg: linear-gradient(155deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 45%, rgba(70,4,28,.16) 100%), var(--bg);
+    --text: #fff5f8;
+    --muted: #ffe9f1;
+    --faint: #ffd3e3;
+    --accent: #6d0f38;
+    --accent-fg: #fff2f7;
+    --accent-ink: #ffe6ef;
+    --accent-soft: #a01a50;
+    --accent-2: #cfe36b;
+    --accent-grad: linear-gradient(135deg, #5c0b2e 0%, #7a1240 56%, #951a4d 100%);
+    --chip-bg: linear-gradient(135deg, #8e1b47 0%, #b0255a 100%);
+    --progress-grad: linear-gradient(90deg, #6d0f38 0%, #b0255a 55%, #ff9ebc 100%);
+    --leaf: #cfe36b;
+    --danger: #fff2f6;
+    --danger-btn: #4d0a27;
+    --danger-btn-ink: #ffe7ef;
+    --sh-dark: rgba(84,0,30,.42);
+    --sh-light: rgba(255,186,211,.42);
+    --line: rgba(255,255,255,.14);
+    --focus: #ffe6ef;
+    --phone-system-fg: #fff5f8;
+  }
+  html[data-theme="teal"] {
+    --bg: #bfe5da;
+    --stage: #93cbbd;
+    --stage-glow: rgba(255,255,255,.55);
+    --stage-layer:
+      radial-gradient(62% 55% at 86% 12%, rgba(150,225,255,.42), transparent 64%),
+      radial-gradient(55% 50% at 10% 90%, rgba(255,170,130,.32), transparent 64%);
+    --app-glow:
+      radial-gradient(92% 60% at 4% 0%, rgba(255,255,255,.42), transparent 62%),
+      radial-gradient(82% 54% at 98% 10%, rgba(132,214,255,.32), transparent 64%),
+      radial-gradient(90% 62% at 90% 100%, rgba(30,130,112,.24), transparent 68%),
+      radial-gradient(60% 46% at 0% 92%, rgba(255,166,128,.3), transparent 64%);
+    --panel-bg: linear-gradient(150deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 58%), var(--bg);
+    --text: #12392f;
+    --muted: #3d6259;
+    --faint: #6b8d84;
+    --accent: #0d5f4e;
+    --accent-fg: #0b5344;
+    --accent-ink: #ecfff9;
+    --accent-soft: #97c9bc;
+    --accent-2: #e89466;
+    --accent-grad: linear-gradient(135deg, #0a4a3b 0%, #0f6352 56%, #177a62 100%);
+    --chip-bg: linear-gradient(135deg, #9ed2c4 0%, #c9ece2 100%);
+    --progress-grad: linear-gradient(90deg, #0d5f4e 0%, #2c8a72 58%, #e89466 100%);
+    --leaf: #0b5344;
+    --danger: #932b2a;
+    --danger-btn: #8f2a28;
+    --danger-btn-ink: #fff2f0;
+    --sh-dark: rgba(31,110,94,.3);
+    --sh-light: rgba(255,255,255,.88);
+    --line: rgba(18,57,47,.1);
+    --focus: #084a3c;
+    --phone-system-fg: #12392f;
+  }
+
+  :root {
+    --font-ui: "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    --font-num: "SF Mono", "Cascadia Mono", "JetBrains Mono", "Roboto Mono", ui-monospace, monospace;
+  }
+
+  body {
+    background:
+      var(--stage-layer, none),
+      radial-gradient(circle at 50% 10%, var(--stage-glow, rgba(255,255,255,.7)), transparent 60%),
+      var(--stage);
+    color: var(--text);
+    font-family: var(--font-ui);
+  }
+
+  .phone-screen { background: var(--bg); }
+  .phone-content {
+    overflow: hidden;
+    padding-top: var(--phone-safe-top);
+    padding-bottom: var(--phone-safe-bottom);
+    background-color: var(--bg);
+    background-image: var(--app-glow, none);
+    background-repeat: no-repeat;
+  }
+
+  .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+  .app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: transparent;
+    color: var(--text);
+  }
+
+  .screens { position: relative; flex: 1 1 auto; min-height: 0; }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px 20px 26px;
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen:not([hidden]) { animation: screen-in .24s ease-out both; }
+
+  @keyframes screen-in {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: 27px; line-height: 1.24; letter-spacing: -.02em; font-weight: 700; }
+  h2 { font-size: 16px; line-height: 1.35; letter-spacing: -.01em; font-weight: 700; }
+  h3 { font-size: 14px; line-height: 1.4; font-weight: 700; }
+
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  a { color: var(--accent-fg); }
+  svg { display: block; }
+  .cover-svg { width: 100%; height: 100%; display: block; }
+  .hero-art, .mini-art, .coll-art, .detail-art, .rec-thumb { position: relative; }
+  .cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+  .eyebrow {
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: .04em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .sub { margin-top: 8px; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+
+  .page-head { margin: 12px 0 18px; }
+  .page-head h1 { margin-top: 6px; }
+
+  .panel {
+    background: var(--panel-bg, var(--bg));
+    border-radius: 24px;
+    box-shadow: 8px 8px 18px var(--sh-dark), -8px -8px 18px var(--sh-light);
+  }
+
+  .inset {
+    background: var(--bg);
+    box-shadow: inset 5px 5px 10px var(--sh-dark), inset -5px -5px 10px var(--sh-light);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform .16s ease, box-shadow .16s ease, background-color .22s ease, color .22s ease;
+  }
+  .btn-block { width: 100%; }
+  .btn-primary {
+    background-color: var(--accent);
+    background-image: var(--accent-grad, none);
+    color: var(--accent-ink);
+    box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light), inset 0 1px 0 rgba(255,255,255,.16);
+  }
+  .btn-primary:active { transform: translateY(1px); box-shadow: inset 3px 3px 8px rgba(0,0,0,.28), inset -2px -2px 6px rgba(255,255,255,.1); }
+  .btn-soft { background: var(--bg); color: var(--text); box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light); }
+  .btn-soft:active { box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); }
+  .btn-ghost { background: var(--bg); color: var(--muted); box-shadow: 4px 4px 10px var(--sh-dark), -4px -4px 10px var(--sh-light); }
+  .btn.danger { background: var(--danger-btn); color: var(--danger-btn-ink); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 4px 4px 10px var(--sh-dark), -4px -4px 10px var(--sh-light);
+    text-decoration: none;
+    transition: box-shadow .16s ease, transform .16s ease;
+  }
+  .icon-btn:active { transform: translateY(1px); box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+  .icon-btn.sm { width: 40px; height: 40px; min-width: 40px; border-radius: 12px; }
+
+  .text-btn {
+    min-height: 36px;
+    padding: 0 4px;
+    color: var(--accent-fg);
+    font-size: 12.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .chip-topic {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--accent-fg);
+    background: var(--chip-bg, var(--accent-soft));
+    letter-spacing: .02em;
+  }
+  .chip-topic.topic-more { color: var(--muted); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+  .coll-topics { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  .home-head { padding-top: 12px; }
+  .home-head h1 { margin-top: 6px; max-width: 300px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 20px 0 22px;
+    padding: 16px 6px;
+    border-radius: 22px;
+  }
+  .stat { display: grid; gap: 4px; text-align: center; position: relative; }
+  .stat + .stat::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--line);
+  }
+  .stat-num {
+    font-family: var(--font-num);
+    font-size: 23px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label { font-size: 10.5px; line-height: 1.3; color: var(--muted); letter-spacing: .02em; }
+
+  .hero { padding: 11px; }
+  .hero-art, .detail-art {
+    overflow: hidden;
+    border-radius: 17px;
+    aspect-ratio: 4 / 3;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .hero-body { padding: 13px 6px 5px; }
+  .hero-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hero-time { font-size: 11.5px; color: var(--muted); }
+  .hero-title { margin-top: 9px; font-size: 20px; line-height: 1.32; letter-spacing: -.01em; font-weight: 700; overflow-wrap: anywhere; }
+  .hero-meta { margin: 6px 0 14px; font-size: 12.5px; color: var(--muted); }
+  .hero-live { color: var(--accent-fg); font-weight: 650; font-variant-numeric: tabular-nums; }
+  .hero-state { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 650; color: var(--accent-fg); letter-spacing: .02em; }
+  .hero-state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2, var(--accent)); }
+  .hero-state.paused { color: var(--muted); }
+  .hero-state.paused::before { background: var(--muted); }
+  .hero-note { margin: -4px 0 14px; font-size: 12px; line-height: 1.6; color: var(--text); }
+  .hero-progress { height: 7px; margin: -4px 0 14px; border-radius: 99px; background: var(--bg); box-shadow: inset 2px 2px 4px var(--sh-dark), inset -2px -2px 4px var(--sh-light); overflow: hidden; }
+  .hero-progress span { display: block; height: 100%; border-radius: inherit; background: var(--progress-grad, var(--accent)); transition: width .4s linear; }
+
+  .sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 24px 2px 11px;
+  }
+  .sec-note { font-size: 11.5px; color: var(--muted); }
+
+  .mini-rail { margin-inline: -20px; --od-rail-pad: 20px; --od-gap: 11px; padding-block: 5px 12px; }
+  .mini-card {
+    width: 122px;
+    padding: 7px;
+    border-radius: 18px;
+    background: var(--bg);
+    box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light);
+    text-align: left;
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .mini-card:active { transform: translateY(1px); box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+  .mini-art {
+    display: block;
+    overflow: hidden;
+    border-radius: 12px;
+    aspect-ratio: 4 / 3;
+    margin-bottom: 8px;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .mini-title { font-size: 12px; line-height: 1.35; font-weight: 650; min-height: 32px; overflow-wrap: anywhere; }
+  .mini-meta { display: block; margin-top: 5px; font-size: 10px; color: var(--muted); }
+
+  .empty-card { padding: 28px 20px; text-align: center; }
+  .empty-card h2 { margin-bottom: 8px; }
+  .empty-card p { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+
+  .lib-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-top: 12px; }
+  .lib-head h1 { margin-top: 4px; }
+  .lib-count { margin-top: 6px; font-size: 12px; color: var(--muted); }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 48px;
+    padding: 0 10px 0 14px;
+    margin: 17px 0 12px;
+    border-radius: 16px;
+    color: var(--muted);
+  }
+  .search:focus-within { box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light), 0 0 0 2px var(--focus); }
+  .search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+  }
+  .search input::placeholder { color: var(--muted); opacity: .85; }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .search-clear {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+  }
+  .search-clear[hidden] { display: none !important; }
+
+  .chips { margin-inline: -20px; --od-rail-pad: 20px; --od-gap: 9px; padding-block: 4px 10px; }
+  .chip-bar { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+  .chip-bar .chips { flex: 1 1 auto; min-width: 0; margin: 0; --od-rail-pad: 0px; }
+  .chip-edit {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 650;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: 4px 4px 9px var(--sh-dark), -4px -4px 9px var(--sh-light);
+    transition: box-shadow .16s ease;
+  }
+  .chip-edit:active { box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+  .chip {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: 4px 4px 9px var(--sh-dark), -4px -4px 9px var(--sh-light);
+    transition: box-shadow .16s ease, color .16s ease;
+    white-space: nowrap;
+  }
+  .chip[aria-pressed="true"] {
+    color: var(--accent-fg);
+    box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light);
+  }
+
+  .lib-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 2px 14px; }
+  .lib-tools-note { font-size: 11.5px; color: var(--muted); }
+  .sort-wrap { position: relative; display: inline-flex; align-items: center; }
+  .sort-wrap select {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: 36px;
+    padding: 0 30px 0 13px;
+    border: 0;
+    border-radius: 11px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 3px 3px 8px var(--sh-dark), -3px -3px 8px var(--sh-light);
+    cursor: pointer;
+  }
+  .sort-wrap .od-icon { position: absolute; right: 10px; pointer-events: none; transform: rotate(90deg); color: var(--muted); }
+
+  .coll-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .coll-card {
+    padding: 8px;
+    border-radius: 21px;
+    background: var(--bg);
+    box-shadow: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light);
+    text-align: left;
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .coll-art { display: block; overflow: hidden; border-radius: 15px; aspect-ratio: 4 / 3; box-shadow: inset 0 0 0 1px var(--line); }
+  .coll-body { display: block; padding: 10px 4px 5px; }
+  .coll-title { display: block; margin-top: 7px; font-size: 13px; line-height: 1.4; font-weight: 650; min-height: 36px; overflow-wrap: anywhere; }
+  .coll-meta { display: block; margin-top: 5px; font-size: 10.5px; color: var(--muted); }
+
+  .empty { text-align: center; padding: 38px 18px 30px; }
+  .empty-ico {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: inset 5px 5px 10px var(--sh-dark), inset -5px -5px 10px var(--sh-light);
+  }
+  .empty-title { font-size: 15px; font-weight: 700; }
+  .empty-text { margin: 7px auto 18px; max-width: 240px; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+
+  .detail-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0 14px; }
+  .detail-top-title { font-size: 13px; font-weight: 650; color: var(--muted); letter-spacing: .03em; }
+  .detail-hero { padding: 11px; }
+  .detail-body { padding: 15px 6px 7px; }
+  .detail-title { margin-top: 9px; font-size: 23px; line-height: 1.3; font-weight: 700; letter-spacing: -.02em; overflow-wrap: anywhere; }
+  .detail-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 15px 0 16px;
+    padding: 13px 4px;
+    border-radius: 16px;
+    box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light);
+  }
+  .mini-stat { display: grid; gap: 3px; text-align: center; }
+  .mini-stat span { font-size: 10px; line-height: 1.3; color: var(--muted); }
+  .mini-stat strong { font-family: var(--font-num); font-size: 15px; line-height: 1.2; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .detail-body .btn + .btn { margin-top: 9px; }
+  .detail-mode-note { margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); text-align: center; }
+  .audio-card {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px; padding: 10px 12px;
+    border-radius: 14px; background: var(--panel-bg);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .audio-ico {
+    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .audio-copy { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+  .audio-copy strong { font-size: 12.5px; font-weight: 650; line-height: 1.3; }
+  .audio-copy span { font-size: 10.5px; line-height: 1.4; color: var(--muted); }
+  .audio-btn {
+    flex: 0 0 auto; border: 0; cursor: pointer;
+    padding: 7px 12px; border-radius: 999px;
+    font: inherit; font-size: 11.5px; font-weight: 650;
+    color: var(--accent); background: var(--accent-soft);
+  }
+  .audio-btn:active { transform: translateY(1px); }
+  .audio-btn[disabled] { opacity: .6; }
+
+  .notes { display: grid; }
+  .note-item { padding: 14px 2px; border-top: 1px solid var(--line); }
+  .note-item:first-child { border-top: 0; }
+  .note-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .note-row time { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .note-min { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .note-text { margin-top: 6px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+  .note-text.muted { color: var(--muted); }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: 2px 2px 5px var(--sh-dark), -2px -2px 5px var(--sh-light);
+  }
+  .tag.muted { box-shadow: none; opacity: .75; }
+
+  .btn-danger-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 20px;
+    border-radius: 15px;
+    color: var(--danger);
+    font-size: 12.5px;
+    font-weight: 650;
+  }
+
+  .chart-card { padding: 17px 15px 12px; margin-bottom: 22px; }
+  .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .chart-head h2 { font-size: 14.5px; }
+  .chart-head span { font-size: 11.5px; color: var(--muted); }
+  .chart-card svg { width: 100%; height: auto; display: block; margin-top: 4px; }
+
+  .day { margin-bottom: 20px; }
+  .day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 2px 8px; }
+  .day-head span { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rec-list { display: grid; gap: 9px; }
+  .rec {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 11px;
+    border-radius: 17px;
+    background: var(--bg);
+    box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light);
+  }
+  .rec-thumb { flex: none; width: 46px; height: 46px; border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+  .rec-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .rec-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .rec-title { font-size: 12.5px; font-weight: 650; line-height: 1.35; min-width: 0; }
+  .rec-min { flex: none; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rec-note { font-size: 11.5px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
+  .rec-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .rec-tags .tag { min-height: 19px; font-size: 9.5px; padding: 0 6px; box-shadow: none; box-shadow: 2px 2px 4px var(--sh-dark), -2px -2px 4px var(--sh-light); }
+
+  .profile-brand { display: flex; align-items: center; gap: 13px; margin: 12px 2px 18px; }
+  .brand-mark {
+    width: 58px;
+    height: 58px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 19px;
+    background: var(--bg);
+    box-shadow: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light);
+  }
+  .brand-logo { width: 36px; height: 36px; }
+  .brand-logo .brand-body { fill: var(--accent); }
+  .brand-logo .brand-leaf { fill: none; stroke: var(--leaf, var(--accent-fg)); stroke-width: 1.8; stroke-linecap: round; }
+  .brand-logo .brand-play { fill: var(--accent-ink); }
+  .brand-copy { display: grid; gap: 3px; min-width: 0; }
+  .brand-name { font-size: 19px; line-height: 1.25; font-weight: 750; letter-spacing: -.02em; }
+  .brand-slogan { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+  .profile-card { padding: 18px 16px 16px; }
+  .profile-top {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 2px;
+    margin: -2px;
+    border-radius: 16px;
+    text-align: left;
+  }
+  .profile-top:active { transform: translateY(1px); }
+  .avatar {
+    width: 58px;
+    height: 58px;
+    flex: none;
+    overflow: hidden;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--accent-fg);
+    background: var(--bg);
+    box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light);
+  }
+  .avatar img, .avatar-lg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .avatar-lg { width: 74px; height: 74px; border-radius: 50%; }
+  .profile-id { display: grid; gap: 3px; flex: 1 1 auto; min-width: 0; }
+  .profile-name { font-size: 17px; line-height: 1.3; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .profile-bio { font-size: 11.5px; line-height: 1.45; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .profile-edit-ico {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light);
+  }
+  .avatar-editor { display: flex; align-items: center; gap: 14px; padding: 2px 0 16px; }
+  .avatar-editor-copy { display: grid; gap: 7px; min-width: 0; }
+  .avatar-editor-title { font-size: 12px; font-weight: 650; }
+  .avatar-editor-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .avatar-editor-actions .btn { min-height: 38px; padding: 0 13px; font-size: 12px; }
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 17px;
+    padding-top: 15px;
+    border-top: 1px solid var(--line);
+  }
+  .profile-stat { display: grid; gap: 3px; }
+  .profile-stat strong { font-family: var(--font-num); font-size: 18px; line-height: 1.15; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .profile-stat span { font-size: 10px; color: var(--muted); }
+
+  .sec-sub { margin: -4px 2px 11px; font-size: 11.5px; color: var(--muted); }
+  .theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .theme-card {
+    position: relative;
+    min-height: 86px;
+    padding: 11px 9px;
+    border-radius: 17px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--bg);
+    box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light);
+  }
+  .theme-card[aria-pressed="true"] { box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light); }
+  .theme-card .theme-check { position: absolute; top: 9px; right: 9px; color: var(--accent-fg); opacity: 0; }
+  .theme-card[aria-pressed="true"] .theme-check { opacity: 1; }
+  .theme-dot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 68% 70%, var(--swa) 0 6px, var(--sw) 7px);
+    box-shadow: inset 1px 1px 2px rgba(255,255,255,.6), 0 2px 5px rgba(0,0,0,.14);
+  }
+  .theme-name { font-size: 11.5px; font-weight: 650; }
+  .theme-card[aria-pressed="true"] .theme-name { color: var(--accent-fg); }
+
+  .data-card { padding: 4px 15px; }
+  .data-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; border-top: 1px solid var(--line); }
+  .data-row:first-child { border-top: 0; }
+  .data-row span { font-size: 12.5px; color: var(--muted); }
+  .data-row strong { font-size: 12.5px; font-weight: 650; }
+  .data-card + .btn { margin-top: 12px; }
+  .foot-note { margin: 26px 0 6px; text-align: center; font-size: 10.5px; line-height: 1.7; color: var(--muted); }
+
+  .tabbar {
+    flex: none;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 7px 12px 5px;
+    background: var(--bg);
+    box-shadow: 0 -8px 18px -10px var(--sh-dark);
+    border-top: 1px solid var(--line);
+    position: relative;
+    z-index: 5;
+  }
+  .tab {
+    min-height: 54px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    transition: color .16s ease;
+  }
+  .tab .tab-ico {
+    width: 34px;
+    height: 25px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+  }
+  .tab[aria-current="page"] { color: var(--accent-fg); }
+  .tab[aria-current="page"] .tab-ico { box-shadow: inset 3px 3px 6px var(--sh-dark), inset -3px -3px 6px var(--sh-light); }
+
+  .screen-player { padding: 0 20px 18px; }
+  .player-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0 4px; }
+  .chip-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 0 11px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 650;
+    color: var(--muted);
+    box-shadow: inset 2px 2px 5px var(--sh-dark), inset -2px -2px 5px var(--sh-light);
+  }
+  .chip-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2, var(--accent)); }
+  .player-stage { position: relative; height: 150px; border-radius: 22px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line), 7px 7px 16px var(--sh-dark), -7px -7px 16px var(--sh-light); margin-top: 6px; }
+  .stage-pill {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(12,17,28,.62);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  .player-head { padding: 13px 2px 0; }
+  .player-head h2 { margin-top: 7px; font-size: 18px; line-height: 1.33; overflow-wrap: anywhere; }
+  .dial {
+    position: relative;
+    width: 190px;
+    height: 190px;
+    margin: 12px auto 4px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    box-shadow: 9px 9px 20px var(--sh-dark), -9px -9px 20px var(--sh-light);
+  }
+  .dial-ticks { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .dial-ticks line { stroke: var(--faint); stroke-width: 1.6; opacity: .35; }
+  .dial-ticks line.major { stroke-width: 2.3; }
+  .dial-ticks line.on { stroke: var(--accent); opacity: 1; }
+  .dial-face {
+    width: 148px;
+    height: 148px;
+    border-radius: 50%;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    text-align: center;
+    gap: 3px;
+    box-shadow: inset 5px 5px 12px var(--sh-dark), inset -5px -5px 12px var(--sh-light);
+  }
+  .dial-label { font-size: 9.5px; letter-spacing: .16em; color: var(--muted); font-weight: 650; }
+  .dial-time { font-family: var(--font-num); font-size: 31px; line-height: 1.1; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .dial-sub { font-size: 10px; color: var(--faint); }
+
+  .seek-wrap { margin: 6px 0 2px; }
+  .seek-wrap input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 30px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .seek-wrap input[type="range"]::-webkit-slider-runnable-track {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--bg);
+    box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light);
+  }
+  .seek-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 26px;
+    height: 26px;
+    margin-top: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    box-shadow: 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light);
+  }
+  .seek-wrap input[type="range"]::-moz-range-track {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--bg);
+    box-shadow: inset 4px 4px 8px var(--sh-dark), inset -4px -4px 8px var(--sh-light);
+  }
+  .seek-wrap input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    box-shadow: 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light);
+  }
+  .seek-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: -2px; font-size: 10.5px; color: var(--muted); }
+  .seek-meta span:first-child { font-variant-numeric: tabular-nums; }
+
+  .player-controls { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 12px; }
+  .ctrl {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    background: var(--bg);
+    box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light);
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .ctrl:active { transform: translateY(1px); box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+  .ctrl-main {
+    width: 74px;
+    height: 74px;
+    color: var(--accent-ink);
+    background-color: var(--accent);
+    background-image: var(--accent-grad, none);
+    box-shadow: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light), inset 0 1px 0 rgba(255,255,255,.16);
+  }
+  .ctrl-main:active { box-shadow: inset 3px 3px 9px rgba(0,0,0,.3); }
+  .player-hint { margin-top: 12px; text-align: center; font-size: 10.5px; line-height: 1.6; color: var(--muted); }
+
+  .dialog {
+    border: 0;
+    padding: 0;
+    width: min(356px, calc(100vw - 36px));
+    max-height: calc(100dvh - 60px);
+    border-radius: 26px;
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 30px 80px rgba(8,12,22,.42);
+    font-family: var(--font-ui);
+    overflow: hidden;
+  }
+  .dialog[open] { animation: dlg-in .22s ease-out both; }
+  .dialog::backdrop { background: rgba(10,14,22,.5); }
+  @keyframes dlg-in {
+    from { opacity: 0; transform: translateY(10px) scale(.98); }
+    to { opacity: 1; transform: none; }
+  }
+  .dialog-body { padding: 22px 20px 20px; overflow-y: auto; max-height: calc(100dvh - 60px); }
+  .dialog-sm { width: min(330px, calc(100vw - 40px)); }
+  .dialog-title { font-size: 20px; line-height: 1.3; font-weight: 700; letter-spacing: -.01em; }
+  .dialog-text { margin-top: 10px; font-size: 13px; line-height: 1.65; color: var(--muted); }
+  .dialog-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .dialog-actions .btn { flex: 1 1 0; }
+  .dlg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+
+  .field { display: grid; gap: 7px; margin-bottom: 14px; }
+  .field > label, .field-label { font-size: 12px; font-weight: 650; line-height: 1.4; color: var(--text); }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light);
+    outline: 0;
+  }
+  .field textarea { resize: none; min-height: 84px; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--muted); opacity: .8; }
+  .field input:focus, .field select:focus, .field textarea:focus { box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light), 0 0 0 2px var(--focus); }
+  .field select { appearance: none; -webkit-appearance: none; padding-right: 34px; background-image: none; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .field-row .field { min-width: 0; }
+  .unit-input { position: relative; }
+  .unit-input input { padding-right: 46px; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .unit-input span { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); pointer-events: none; }
+  .field-error { font-size: 11px; line-height: 1.5; color: var(--danger); }
+  .field-error[hidden] { display: none !important; }
+  .field-hint { font-size: 11px; line-height: 1.5; color: var(--muted); }
+  .field-hint[hidden] { display: none !important; }
+  .field-hint.is-error { color: var(--danger); }
+  #avatarHint { margin: -6px 0 12px; }
+  .topic-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+  .topic-empty { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+  .topic-manage { list-style: none; margin: 12px 0 14px; padding: 0; display: grid; gap: 8px; max-height: 38vh; overflow-y: auto; }
+  .topic-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 7px 6px 11px;
+    border-radius: 14px;
+    background: var(--bg);
+    box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light);
+  }
+  .topic-order { flex: none; width: 15px; font-family: var(--font-num); font-size: 10.5px; color: var(--muted); }
+  .topic-info { flex: 1 1 auto; min-width: 0; display: grid; gap: 1px; }
+  .topic-name { font-size: 13px; line-height: 1.35; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topic-count { font-size: 10px; line-height: 1.3; color: var(--muted); }
+  .topic-row-actions { flex: none; display: flex; align-items: center; gap: 3px; }
+  .topic-row-actions .icon-btn[disabled] { opacity: .35; }
+  .topic-manage-empty { font-size: 12px; line-height: 1.6; color: var(--muted); padding: 10px 2px; }
+  .topic-add { display: flex; gap: 8px; align-items: stretch; }
+  .topic-add input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 46px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 13.5px;
+    box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light);
+    outline: 0;
+  }
+  .topic-add input:focus { box-shadow: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light), 0 0 0 2px var(--focus); }
+  .topic-add input::placeholder { color: var(--muted); opacity: .8; }
+  .topic-add .btn { flex: none; padding-inline: 15px; }
+  .topic-add + .field-error { margin-top: 7px; }
+  .helper { font-size: 10.5px; line-height: 1.55; color: var(--muted); }
+  .field textarea + .helper { margin-top: 1px; }
+
+  .cover-field { border: 0; padding: 0; margin: 2px 0 16px; }
+  .cover-field legend { padding: 0; font-size: 12px; font-weight: 650; margin-bottom: 8px; }
+  .cover-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .cover-choice {
+    position: relative;
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .cover-choice[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--accent), inset 0 0 0 1px var(--line); }
+  .cover-choice svg { width: 100%; height: 100%; }
+  .cover-choice span { position: absolute; inset: auto 0 0 0; padding: 3px 0; font-size: 9px; color: #fff; background: rgba(10,14,22,.5); text-align: center; }
+
+  .cover-video-choice {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 9px;
+    border-radius: 14px;
+    background: var(--bg);
+    box-shadow: 4px 4px 9px var(--sh-dark), -4px -4px 9px var(--sh-light);
+    text-align: left;
+    transition: box-shadow .16s ease, transform .16s ease;
+  }
+  .cover-video-choice:active { transform: translateY(1px); }
+  .cover-video-choice[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--accent), 3px 3px 8px var(--sh-dark), -3px -3px 8px var(--sh-light); }
+  .cover-video-choice[disabled] { opacity: .55; }
+  .cover-video-thumb {
+    position: relative;
+    flex: none;
+    width: 66px;
+    height: 50px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 10px;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: inset 2px 2px 5px var(--sh-dark), inset -2px -2px 5px var(--sh-light);
+  }
+  .cover-video-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cover-video-ph { width: 20px; height: 20px; }
+  .cover-video-choice.has-cover .cover-video-ph { display: none; }
+  .cover-video-copy { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+  .cover-video-name { font-size: 12.5px; line-height: 1.35; font-weight: 650; }
+  .cover-video-sub { font-size: 10.5px; line-height: 1.4; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cover-video-tick {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 12px;
+    color: var(--accent-ink);
+    background-color: var(--accent);
+    background-image: var(--accent-grad, none);
+    opacity: 0;
+    transform: scale(.8);
+    transition: opacity .16s ease, transform .16s ease;
+  }
+  .cover-video-choice[aria-pressed="true"] .cover-video-tick { opacity: 1; transform: none; }
+
+  .done-body { text-align: center; }
+  .done-badge {
+    width: 66px;
+    height: 66px;
+    margin: 2px auto 14px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--accent-ink);
+    background-color: var(--accent);
+    background-image: var(--accent-grad, none);
+    box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light);
+  }
+  .done-body .eyebrow { margin-bottom: 5px; }
+  .done-body .dialog-title { font-size: 26px; }
+  .done-summary { display: grid; gap: 4px; margin: 10px 0 18px; }
+  .done-summary strong { font-size: 13px; font-weight: 650; }
+  .done-summary span { font-size: 11.5px; color: var(--muted); }
+  .done-body .field, .done-body .tags-field { text-align: left; }
+  .tags-field { border: 0; padding: 0; margin: 0 0 4px; }
+  .tag-row button {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    box-shadow: 3px 3px 8px var(--sh-dark), -3px -3px 8px var(--sh-light);
+  }
+  .tag-row button[aria-pressed="true"] { color: var(--accent-fg); box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+
+  .toast {
+    position: absolute;
+    z-index: 60;
+    left: 50%;
+    bottom: 92px;
+    max-width: calc(100% - 40px);
+    transform: translate(-50%, 10px);
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: #191d26;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease, transform .22s ease;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (hover: hover) {
+    .coll-card:hover, .mini-card:hover { transform: translateY(-2px); }
+    .btn-primary:hover { filter: brightness(1.05); }
+    .icon-btn:hover { transform: translateY(-1px); }
+    .theme-card:hover { transform: translateY(-1px); }
+  }
+
+  @media (max-width: 359px) {
+    .screen { padding-inline: 16px; }
+    .chips, .mini-rail { margin-inline: -16px; --od-rail-pad: 16px; }
+    .coll-grid { gap: 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+  <symbol id="cover-night" viewBox="0 0 400 300">
+    <rect width="400" height="300" fill="#121a2e"/>
+    <circle cx="306" cy="76" r="60" fill="#e8c98a" opacity=".12"/>
+    <circle cx="306" cy="76" r="34" fill="#f0d9a5"/>
+    <circle cx="294" cy="68" r="6" fill="#e3c58c" opacity=".5"/>
+    <g fill="#8fb0ff" opacity=".55">
+      <circle cx="52" cy="52" r="2"/><circle cx="108" cy="34" r="1.6"/><circle cx="176" cy="66" r="1.8"/><circle cx="236" cy="28" r="1.4"/><circle cx="356" cy="44" r="1.6"/><circle cx="132" cy="92" r="1.3"/>
+    </g>
+    <rect y="206" width="400" height="94" fill="#1a2540"/>
+    <g fill="#0c1424">
+      <rect x="14" y="152" width="54" height="150" rx="2"/>
+      <rect x="78" y="182" width="38" height="120" rx="2"/>
+      <rect x="126" y="128" width="62" height="174" rx="2"/>
+      <rect x="200" y="166" width="46" height="136" rx="2"/>
+      <rect x="258" y="112" width="72" height="190" rx="2"/>
+      <rect x="342" y="158" width="52" height="144" rx="2"/>
+    </g>
+    <g fill="#f0c778">
+      <rect x="24" y="170" width="10" height="8"/><rect x="42" y="170" width="10" height="8"/>
+      <rect x="24" y="190" width="10" height="8"/><rect x="42" y="210" width="10" height="8"/>
+      <rect x="90" y="196" width="9" height="7"/><rect x="104" y="216" width="9" height="7"/>
+      <rect x="142" y="146" width="12" height="9"/><rect x="166" y="146" width="12" height="9"/>
+      <rect x="142" y="172" width="12" height="9"/><rect x="166" y="196" width="12" height="9"/>
+      <rect x="142" y="220" width="12" height="9"/>
+      <rect x="214" y="182" width="10" height="8"/><rect x="230" y="202" width="10" height="8"/>
+      <rect x="274" y="130" width="12" height="9"/><rect x="296" y="130" width="12" height="9"/>
+      <rect x="274" y="156" width="12" height="9"/><rect x="296" y="182" width="12" height="9"/>
+      <rect x="274" y="208" width="12" height="9"/><rect x="318" y="156" width="12" height="9"/>
+      <rect x="354" y="176" width="10" height="8"/><rect x="370" y="198" width="10" height="8"/>
+    </g>
+    <rect y="252" width="400" height="4" fill="#0a111d" opacity=".8"/>
+  </symbol>
+  <symbol id="cover-rain" viewBox="0 0 400 300">
+    <rect width="400" height="300" fill="#203640"/>
+    <circle cx="316" cy="64" r="88" fill="#8fc4c0" opacity=".1"/>
+    <g stroke="#d9efec" stroke-width="1.6" opacity=".24" stroke-linecap="round">
+      <path d="M36 6l-16 84"/><path d="M72 16l-16 84"/><path d="M108 4l-16 84"/><path d="M144 18l-16 84"/>
+      <path d="M180 8l-16 84"/><path d="M216 16l-16 84"/><path d="M252 4l-16 84"/><path d="M288 20l-16 84"/>
+      <path d="M324 8l-16 84"/><path d="M360 18l-16 84"/><path d="M396 6l-16 84"/>
+    </g>
+    <g stroke="#0e2229" stroke-width="10" opacity=".55">
+      <path d="M132 0v300"/><path d="M268 0v300"/><path d="M0 188h400"/>
+    </g>
+    <g fill="none" stroke="#cfe9e6" opacity=".4">
+      <ellipse cx="80" cy="246" rx="46" ry="7"/>
+      <ellipse cx="98" cy="258" rx="26" ry="4"/>
+      <ellipse cx="322" cy="232" rx="38" ry="6"/>
+      <ellipse cx="308" cy="246" rx="18" ry="3"/>
+    </g>
+    <g fill="#a9d6d1" opacity=".5">
+      <circle cx="188" cy="242" r="3"/><circle cx="254" cy="262" r="2.5"/><circle cx="360" cy="270" r="2"/>
+    </g>
+  </symbol>
+  <symbol id="cover-cafe" viewBox="0 0 400 300">
+    <rect width="400" height="300" fill="#3d2822"/>
+    <rect width="400" height="212" fill="#4a3028"/>
+    <g fill="#f0b66c">
+      <circle cx="86" cy="54" r="16"/><circle cx="206" cy="44" r="14"/><circle cx="318" cy="58" r="12"/>
+    </g>
+    <g stroke="#f0b66c" stroke-width="3" opacity=".5">
+      <path d="M86 0v34"/><path d="M206 0v26"/><path d="M318 0v42"/>
+    </g>
+    <g fill="#f0b66c" opacity=".08">
+      <circle cx="86" cy="54" r="46"/><circle cx="206" cy="44" r="40"/><circle cx="318" cy="58" r="34"/>
+    </g>
+    <rect y="196" width="400" height="104" fill="#2a1b17"/>
+    <ellipse cx="200" cy="226" rx="152" ry="24" fill="#33211c"/>
+    <path d="M146 168h108v26a54 54 0 0 1-108 0z" fill="#efe3cf"/>
+    <ellipse cx="202" cy="168" rx="54" ry="12" fill="#f7edda"/>
+    <ellipse cx="202" cy="168" rx="42" ry="8" fill="#6b4a36"/>
+    <path d="M256 178h10a22 22 0 0 1 0 44h-12" fill="none" stroke="#efe3cf" stroke-width="9" stroke-linecap="round"/>
+    <g fill="none" stroke="#f2e6d3" stroke-width="4" stroke-linecap="round" opacity=".55">
+      <path d="M182 140c-7-11 7-15 0-28"/><path d="M212 142c-7-11 7-15 0-28"/>
+    </g>
+    <ellipse cx="200" cy="238" rx="86" ry="12" fill="#1e1310" opacity=".5"/>
+  </symbol>
+  <symbol id="cover-piano" viewBox="0 0 400 300">
+    <rect width="400" height="300" fill="#191b20"/>
+    <circle cx="312" cy="66" r="96" fill="#2c313a"/>
+    <circle cx="312" cy="66" r="46" fill="#3a404b" opacity=".85"/>
+    <g stroke="#5a6270" stroke-width="2" opacity=".35">
+      <path d="M40 42h120"/><path d="M40 60h92"/><path d="M40 78h104"/>
+    </g>
+    <g fill="#efe9dd">
+      <rect x="12" y="126" width="50" height="174" rx="3"/>
+      <rect x="68" y="126" width="50" height="174" rx="3"/>
+      <rect x="124" y="126" width="50" height="174" rx="3"/>
+      <rect x="180" y="126" width="50" height="174" rx="3"/>
+      <rect x="236" y="126" width="50" height="174" rx="3"/>
+      <rect x="292" y="126" width="50" height="174" rx="3"/>
+      <rect x="348" y="126" width="44" height="174" rx="3"/>
+    </g>
+    <g fill="#121318">
+      <rect x="52" y="126" width="28" height="104" rx="3"/>
+      <rect x="108" y="126" width="28" height="104" rx="3"/>
+      <rect x="164" y="126" width="28" height="104" rx="3"/>
+      <rect x="220" y="126" width="28" height="104" rx="3"/>
+      <rect x="276" y="126" width="28" height="104" rx="3"/>
+      <rect x="332" y="126" width="28" height="104" rx="3"/>
+      <rect x="384" y="126" width="12" height="104" rx="2"/>
+    </g>
+    <rect y="120" width="400" height="6" fill="#0b0c0f"/>
+    <rect y="288" width="400" height="12" fill="#0d0e11"/>
+  </symbol>
+  <symbol id="cover-forest" viewBox="0 0 400 300">
+    <rect width="400" height="300" fill="#133127"/>
+    <circle cx="300" cy="82" r="46" fill="#f2e4ad" opacity=".95"/>
+    <circle cx="300" cy="82" r="60" fill="#f2e4ad" opacity=".1"/>
+    <path d="M0 300V236q60-34 120-10t120-6q70-12 160 8v72z" fill="#1e4a38"/>
+    <g fill="#0f2c22">
+      <path d="M54 246l26-78 26 78z"/>
+      <path d="M110 252l34-102 34 102z"/>
+      <path d="M196 248l24-72 24 72z"/>
+      <path d="M258 256l32-96 32 96z"/>
+      <path d="M330 250l26-78 26 78z"/>
+    </g>
+    <g fill="#163a2c">
+      <path d="M20 258l20-58 20 58z"/>
+      <path d="M140 262l18-50 18 50z"/>
+      <path d="M300 262l20-54 20 54z"/>
+    </g>
+    <g fill="#dff0e2" opacity=".12">
+      <rect y="148" width="400" height="16"/>
+      <rect y="196" width="400" height="10"/>
+    </g>
+  </symbol>
+  <symbol id="cover-ocean" viewBox="0 0 400 300">
+    <rect width="400" height="300" fill="#0a2741"/>
+    <g fill="#7fd0da" opacity=".1">
+      <polygon points="170,0 230,0 320,300 200,300"/>
+      <polygon points="100,0 140,0 190,300 120,300"/>
+      <polygon points="270,0 300,0 400,240 360,300"/>
+    </g>
+    <circle cx="220" cy="46" r="86" fill="#bfeef2" opacity=".06"/>
+    <g fill="none" stroke="#9fdde4" stroke-width="2" opacity=".3">
+      <path d="M-10 128q45-20 90 0t90 0 90 0 90 0 90 0"/>
+      <path d="M-10 172q45-20 90 0t90 0 90 0 90 0 90 0"/>
+      <path d="M-10 218q45-20 90 0t90 0 90 0 90 0 90 0"/>
+      <path d="M-10 262q45-20 90 0t90 0 90 0 90 0 90 0"/>
+    </g>
+    <g fill="#cdeef1" opacity=".35">
+      <circle cx="90" cy="90" r="4"/><circle cx="118" cy="62" r="2.5"/><circle cx="330" cy="120" r="3"/>
+      <circle cx="300" cy="200" r="2"/><circle cx="66" cy="188" r="2.5"/>
+    </g>
+  </symbol>
+</svg>
+
+<div class="phone-frame" data-phone-shell data-platform="neutral">
+  <span class="hardware-button volume" aria-hidden="true"></span>
+  <span class="hardware-button power" aria-hidden="true"></span>
+
+  <section class="phone-screen" data-phone-screen>
+    <main class="phone-content" data-phone-content>
+      <div class="app" id="app" data-view="home">
+        <div class="screens">
+          <section class="screen" id="screen-home" data-screen="home">
+            <header class="home-head">
+              <p class="eyebrow" id="homeDate"></p>
+              <h1>今天也种一颗番茄</h1>
+              <p class="sub">选一个合集，让音乐替你计时。</p>
+            </header>
+            <div class="stats panel" id="homeStats"></div>
+            <div id="homeHero"></div>
+            <div id="homeRailWrap">
+              <div class="sec-head">
+                <h2>更多合集</h2>
+                <button class="text-btn" type="button" data-action="goto-library">全部</button>
+              </div>
+              <div class="od-rail mini-rail" id="homeRail"></div>
+            </div>
+          </section>
+
+          <section class="screen" id="screen-library" data-screen="library" hidden>
+            <header class="lib-head">
+              <div>
+                <p class="eyebrow">音乐合集</p>
+                <h1>合集</h1>
+                <p class="lib-count" id="libCount"></p>
+              </div>
+              <button class="icon-btn" type="button" data-action="add-collection" aria-label="添加合集"></button>
+            </header>
+            <div class="search inset">
+              <span id="searchIcon" aria-hidden="true"></span>
+              <input id="libSearch" type="text" inputmode="search" autocomplete="off" placeholder="搜索标题、主题或记录" aria-label="搜索合集" />
+              <button class="search-clear" type="button" data-action="clear-search" aria-label="清除搜索" hidden></button>
+            </div>
+            <div class="chip-bar">
+              <div class="od-rail chips" id="topicChips" role="group" aria-label="按主题筛选"></div>
+              <button class="chip-edit" type="button" data-action="edit-topics" aria-haspopup="dialog" aria-label="管理主题标签">
+                <span id="editTopicsIcon" aria-hidden="true"></span>编辑
+              </button>
+            </div>
+            <div class="lib-tools">
+              <span class="lib-tools-note" id="libNote"></span>
+              <label class="sort-wrap">
+                <span class="visually-hidden">排序方式</span>
+                <select id="libSort">
+                  <option value="recent">最近播放</option>
+                  <option value="count">番茄最多</option>
+                  <option value="duration">时长最长</option>
+                </select>
+                <span id="sortChevron" aria-hidden="true"></span>
+              </label>
+            </div>
+            <div class="coll-grid" id="libGrid"></div>
+            <div id="libEmpty" hidden></div>
+          </section>
+
+          <section class="screen" id="screen-detail" data-screen="detail" hidden>
+            <div id="detailBody"></div>
+          </section>
+
+          <section class="screen" id="screen-records" data-screen="records" hidden>
+            <div id="recordsBody"></div>
+          </section>
+
+          <section class="screen" id="screen-profile" data-screen="profile" hidden>
+            <div id="profileBody"></div>
+          </section>
+
+          <section class="screen screen-player" id="screen-player" data-screen="player" hidden>
+            <header class="player-bar">
+              <button class="icon-btn" type="button" data-action="close-player" aria-label="收起播放器"></button>
+              <span class="chip-live">专注中</span>
+              <a class="icon-btn" id="playerBili" href="#" target="_blank" rel="noopener" aria-label="在 B 站打开这个合集"></a>
+            </header>
+            <div class="player-stage" id="playerStage"><span class="stage-pill">音乐合集中</span></div>
+            <div class="player-head">
+              <span class="chip-topic" id="playerTopic"></span>
+              <h2 id="playerTitle"></h2>
+            </div>
+            <div class="dial">
+              <svg class="dial-ticks" id="dialTicks" viewBox="0 0 200 200" aria-hidden="true" focusable="false"></svg>
+              <div class="dial-face">
+                <span class="dial-label">剩余</span>
+                <span class="dial-time" id="playerTime">45:00</span>
+                <span class="dial-sub" id="playerTotal">共 45 分钟</span>
+              </div>
+            </div>
+            <div class="seek-wrap">
+              <input type="range" id="playerSeek" min="0" max="2700" step="1" value="0" aria-label="播放进度" />
+              <div class="seek-meta">
+                <span id="playerElapsed">已专注 00:00</span>
+                <span>拖到结尾可预览结算</span>
+              </div>
+            </div>
+            <div class="player-controls">
+              <button class="ctrl" type="button" data-action="rewind" aria-label="后退 15 秒"></button>
+              <button class="ctrl ctrl-main" type="button" data-action="toggle-play" id="playBtn" aria-label="暂停"></button>
+              <button class="ctrl" type="button" data-action="forward" aria-label="快进 15 秒"></button>
+            </div>
+            <p class="player-hint">音轨放完，这颗番茄就自动收下。</p>
+          </section>
+        </div>
+
+        <nav class="tabbar" id="tabbar" aria-label="主导航">
+          <button class="tab" type="button" data-nav="home" aria-current="page">
+            <span class="tab-ico" id="tabIconHome" aria-hidden="true"></span>
+            <span>专注</span>
+          </button>
+          <button class="tab" type="button" data-nav="library">
+            <span class="tab-ico" id="tabIconLibrary" aria-hidden="true"></span>
+            <span>合集</span>
+          </button>
+          <button class="tab" type="button" data-nav="records">
+            <span class="tab-ico" id="tabIconRecords" aria-hidden="true"></span>
+            <span>记录</span>
+          </button>
+          <button class="tab" type="button" data-nav="profile">
+            <span class="tab-ico" id="tabIconProfile" aria-hidden="true"></span>
+            <span>我的</span>
+          </button>
+        </nav>
+      </div>
+    </main>
+
+    <dialog class="dialog" id="doneDialog" aria-labelledby="doneTitle">
+      <div class="dialog-body done-body">
+        <span class="done-badge" id="doneBadge" aria-hidden="true"></span>
+        <p class="eyebrow">本次专注完成</p>
+        <h2 class="dialog-title" id="doneTitle">番茄 +1</h2>
+        <p class="done-summary"><strong id="doneCollection"></strong><span id="doneMeta"></span></p>
+        <div class="field">
+          <label for="doneNote">这段时间做了什么？</label>
+          <textarea id="doneNote" rows="3" maxlength="140" placeholder="例如：把播放器的进度逻辑写完了"></textarea>
+          <p class="helper">只写给自己看，之后可以在「记录」里回看。</p>
+        </div>
+        <div class="tags-field">
+          <span class="field-label" id="doneTagsLabel">快捷标签</span>
+          <div class="tag-row" id="doneTags" role="group" aria-labelledby="doneTagsLabel">
+            <button type="button" data-action="toggle-tag" data-tag="设计" aria-pressed="false">设计</button>
+            <button type="button" data-action="toggle-tag" data-tag="写代码" aria-pressed="false">写代码</button>
+            <button type="button" data-action="toggle-tag" data-tag="阅读" aria-pressed="false">阅读</button>
+            <button type="button" data-action="toggle-tag" data-tag="写作" aria-pressed="false">写作</button>
+            <button type="button" data-action="toggle-tag" data-tag="剪辑" aria-pressed="false">剪辑</button>
+            <button type="button" data-action="toggle-tag" data-tag="学习" aria-pressed="false">学习</button>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-action="done-skip">跳过记录</button>
+          <button class="btn btn-primary" type="button" data-action="done-save">保存记录</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="collectionDialog" aria-labelledby="collDialogTitle">
+      <div class="dialog-body">
+        <div class="dlg-head">
+          <h2 class="dialog-title" id="collDialogTitle">添加合集</h2>
+          <button class="icon-btn sm" type="button" data-action="close-dialog" data-target="collectionDialog" aria-label="关闭"></button>
+        </div>
+        <div class="field">
+          <label for="collLink">B 站视频链接</label>
+          <input id="collLink" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://www.bilibili.com/video/BV..." />
+          <p class="field-error" id="collLinkError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="collTitle">合集标题</label>
+          <input id="collTitle" type="text" maxlength="40" autocomplete="off" placeholder="例如：深夜 Lo-fi 电台" />
+          <p class="field-hint" id="collTitleHint" hidden></p>
+          <p class="field-error" id="collTitleError" hidden></p>
+        </div>
+        <div class="field">
+          <span class="field-label" id="collTopicLabel">主题</span>
+          <div class="topic-picker" id="collTopicPicker" role="group" aria-labelledby="collTopicLabel"></div>
+          <p class="field-hint">可多选，在合集页点「编辑」可管理标签</p>
+          <p class="field-error" id="collTopicsError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="collDuration">单次时长</label>
+          <div class="unit-input">
+            <input id="collDuration" type="number" min="1" max="300" step="1" value="45" inputmode="numeric" />
+            <span>分钟</span>
+          </div>
+          <p class="field-hint" id="collDurationHint" hidden></p>
+          <p class="field-error" id="collDurationError" hidden></p>
+        </div>
+        <fieldset class="cover-field">
+          <legend>封面</legend>
+          <button class="cover-video-choice" type="button" id="coverChoiceVideo" data-action="choose-cover" data-cover="video" aria-pressed="false" aria-label="使用视频封面" disabled>
+            <span class="cover-video-thumb">
+              <svg class="cover-video-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="13" height="13" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3z"/></svg>
+              <img id="coverVideoImg" alt="" hidden referrerpolicy="no-referrer" onerror="this.hidden=true;this.parentNode.parentNode.classList.remove('has-cover')" />
+            </span>
+            <span class="cover-video-copy">
+              <span class="cover-video-name">视频封面</span>
+              <span class="cover-video-sub" id="coverVideoSub">粘贴链接后自动读取</span>
+            </span>
+            <span class="cover-video-tick" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19.5 6.5"/></svg></span>
+          </button>
+          <div class="cover-grid" id="coverGrid">
+            <button class="cover-choice" type="button" data-action="choose-cover" data-cover="night" aria-pressed="false" aria-label="夜晚封面"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#cover-night"></use></svg><span>夜晚</span></button>
+            <button class="cover-choice" type="button" data-action="choose-cover" data-cover="rain" aria-pressed="false" aria-label="雨声封面"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#cover-rain"></use></svg><span>雨声</span></button>
+            <button class="cover-choice" type="button" data-action="choose-cover" data-cover="cafe" aria-pressed="false" aria-label="咖啡馆封面"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#cover-cafe"></use></svg><span>咖啡</span></button>
+            <button class="cover-choice" type="button" data-action="choose-cover" data-cover="piano" aria-pressed="false" aria-label="钢琴封面"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#cover-piano"></use></svg><span>钢琴</span></button>
+            <button class="cover-choice" type="button" data-action="choose-cover" data-cover="forest" aria-pressed="false" aria-label="森林封面"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#cover-forest"></use></svg><span>森林</span></button>
+            <button class="cover-choice" type="button" data-action="choose-cover" data-cover="ocean" aria-pressed="false" aria-label="海洋封面"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#cover-ocean"></use></svg><span>海洋</span></button>
+          </div>
+        </fieldset>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-action="close-dialog" data-target="collectionDialog">取消</button>
+          <button class="btn btn-primary" type="button" data-action="save-collection">保存</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="dialog dialog-sm" id="confirmDialog" aria-labelledby="confirmTitle">
+      <div class="dialog-body">
+        <h2 class="dialog-title" id="confirmTitle">确认操作</h2>
+        <p class="dialog-text" id="confirmText"></p>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-action="confirm-no">取消</button>
+          <button class="btn btn-primary" type="button" data-action="confirm-yes" id="confirmOk">确认</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="topicDialog" aria-labelledby="topicDialogTitle">
+      <div class="dialog-body">
+        <div class="dlg-head">
+          <h2 class="dialog-title" id="topicDialogTitle">管理主题</h2>
+          <button class="icon-btn sm" type="button" data-action="close-dialog" data-target="topicDialog" aria-label="关闭"></button>
+        </div>
+        <p class="dialog-text">调整主题的排序，或添加、删除标签。删除后，这个标签也会从相关合集上移除。</p>
+        <ul class="topic-manage" id="topicManageList"></ul>
+        <div class="topic-add">
+          <input id="topicNew" type="text" maxlength="10" autocomplete="off" placeholder="新主题，例如：写作" aria-label="新主题名称" />
+          <button class="btn btn-primary" type="button" data-action="topic-add">添加</button>
+        </div>
+        <p class="field-error" id="topicNewError" hidden></p>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-action="close-dialog" data-target="topicDialog">完成</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="profileDialog" aria-labelledby="profileDialogTitle">
+      <div class="dialog-body">
+        <div class="dlg-head">
+          <h2 class="dialog-title" id="profileDialogTitle">编辑个人信息</h2>
+          <button class="icon-btn sm" type="button" data-action="close-dialog" data-target="profileDialog" aria-label="关闭"></button>
+        </div>
+        <div class="avatar-editor">
+          <span class="avatar avatar-lg" id="profileAvatarPreview"></span>
+          <div class="avatar-editor-copy">
+            <p class="avatar-editor-title">头像</p>
+            <div class="avatar-editor-actions">
+              <button class="btn btn-soft" type="button" data-action="pick-avatar">更换头像</button>
+              <button class="text-btn" type="button" data-action="reset-avatar">恢复默认</button>
+            </div>
+          </div>
+          <!-- 用 visually-hidden 而不是 hidden：display:none 的文件选择器在部分 WebView 上
+               程序化 click() 不会弹出系统选择器，换成 1px 隐形但仍在渲染树里的元素最稳 -->
+          <input type="file" id="avatarInput" accept="image/*" class="visually-hidden" tabindex="-1" />
+        </div>
+        <p class="field-hint" id="avatarHint">支持 JPG、PNG，选择后会自动压缩</p>
+        <div class="field">
+          <label for="profileNickname">昵称</label>
+          <input id="profileNickname" type="text" maxlength="16" autocomplete="off" placeholder="怎么称呼你" />
+          <p class="field-error" id="profileNicknameError" hidden></p>
+        </div>
+        <div class="field">
+          <label for="profileBio">简介</label>
+          <textarea id="profileBio" maxlength="60" rows="3" placeholder="一句话介绍自己，或写下你的专注宣言"></textarea>
+          <p class="field-hint">最多 60 字</p>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" type="button" data-action="close-dialog" data-target="profileDialog">取消</button>
+          <button class="btn btn-primary" type="button" data-action="save-profile">保存</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="status-bar" aria-hidden="true">
+      <span class="status-time">9:41</span>
+      <span class="status-cutout-zone"></span>
+      <span class="status-icons">
+        <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+        <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+        <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+      </span>
+    </div>
+    <div class="camera-dot" aria-hidden="true"></div>
+    <div class="gesture-indicator" aria-hidden="true"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DATA_KEY = 'fanqie.data.v1';
+  // 进行中的番茄单独存一个键：它每几秒就要落一次盘，
+  // 混在 data 里会把头像那串 base64 反复写进 localStorage，白费性能。
+  var FOCUS_KEY = 'fanqie.focus.v1';
+  var COVERS = [['night', '夜晚'], ['rain', '雨声'], ['cafe', '咖啡馆'], ['piano', '钢琴'], ['forest', '森林'], ['ocean', '海洋']];
+  var COVER_IDS = COVERS.map(function (item) { return item[0]; });
+  var TOPICS = ['夜晚', '白噪音', '咖啡馆', '钢琴', '自然', '其他'];
+  var COVER_BY_TOPIC = { '夜晚': 'night', '白噪音': 'rain', '咖啡馆': 'cafe', '钢琴': 'piano', '自然': 'forest', '其他': 'ocean' };
+  var THEMES = [
+    ['cool', '冷白', '#e7ebf2', '#3f5fd0'],
+    ['cream', '米黄', '#efe4d1', '#8a5a22'],
+    ['lemon', '柠檬', '#f2d451', '#6f7d18'],
+    ['dragonfruit', '火龙果', '#c22b64', '#cfe36b'],
+    ['teal', '青', '#bfe5da', '#e89466']
+  ];
+  var WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+  var ICONS = {
+    timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.4 1.6"/><path d="M9.5 2.5h5"/><path d="M12 2.5V5"/>',
+    grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+    chart: '<path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M2.5 20h19"/>',
+    user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c.6-4 3.8-6.2 7.5-6.2s6.9 2.2 7.5 6.2"/>',
+    play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.2"/>',
+    pause: '<path d="M9 5v14" stroke-width="2.6"/><path d="M15 5v14" stroke-width="2.6"/>',
+    back: '<path d="M15 5.5L8.5 12 15 18.5"/>',
+    plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+    close: '<path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/>',
+    edit: '<path d="M4 20h4l10.5-10.5-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+    trash: '<path d="M4 7h16"/><path d="M9.5 7V5h5v2"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10 11v5.5"/><path d="M14 11v5.5"/>',
+    external: '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5.5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1H11"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19.5 6.5"/>',
+    chevron: '<path d="M9 5.5L15.5 12 9 18.5"/>',
+    rewind: '<path d="M11.5 6.5L5 12l6.5 5.5z" fill="currentColor" stroke-width="1.2"/><path d="M20 6.5L13.5 12l6.5 5.5z" fill="currentColor" stroke-width="1.2"/>',
+    forward: '<path d="M12.5 6.5L19 12l-6.5 5.5z" fill="currentColor" stroke-width="1.2"/><path d="M4 6.5L10.5 12 4 17.5z" fill="currentColor" stroke-width="1.2"/>',
+    clock: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
+    up: '<path d="M12 19V5"/><path d="M6 11l6-6 6 6"/>',
+    down: '<path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>'
+  };
+
+  function $(selector, root) { return (root || document).querySelector(selector); }
+  function $$(selector, root) { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
+  function icon(name, size) {
+    var path = ICONS[name] || '';
+    var px = size || 22;
+    return '<svg class="od-icon" style="--od-icon-size:' + px + 'px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + path + '</svg>';
+  }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+  function dkey(value) {
+    var d = value instanceof Date ? value : new Date(value);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function todayKey() { return dkey(new Date()); }
+  function fmtClock(total) {
+    var s = Math.max(0, Math.round(total));
+    return pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+  }
+  function fmtMinutes(total) {
+    var m = Math.max(0, Math.round(total));
+    if (m < 60) return m + ' 分钟';
+    return Math.floor(m / 60) + ' 小时' + (m % 60 ? ' ' + (m % 60) + ' 分' : '');
+  }
+  function fmtDayLabel(key) {
+    var today = todayKey();
+    var yest = new Date(); yest.setDate(yest.getDate() - 1);
+    if (key === today) return '今天';
+    if (key === dkey(yest)) return '昨天';
+    var parts = key.split('-');
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 周' + WEEK[d.getDay()];
+  }
+  function fmtWhen(iso) {
+    var key = dkey(iso);
+    if (key === todayKey()) return '今天';
+    var yest = new Date(); yest.setDate(yest.getDate() - 1);
+    if (key === dkey(yest)) return '昨天';
+    var d = new Date(iso);
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  }
+  function fmtDateTime(iso) {
+    var d = new Date(iso);
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function fmtTime(iso) {
+    var d = new Date(iso);
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function coverSvg(id) {
+    var safe = COVER_IDS.indexOf(id) >= 0 ? id : 'night';
+    return '<svg class="cover-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><use href="#cover-' + safe + '"></use></svg>';
+  }
+
+  function normalizeCoverUrl(url) {
+    var text = String(url || '').trim();
+    if (!/^(https?:)?\/\//i.test(text)) return '';
+    if (text.indexOf('//') === 0) return 'https:' + text;
+    return text.replace(/^http:\/\//i, 'https://');
+  }
+
+  function coverMarkup(c) {
+    var isVideo = c && c.cover === 'video' && c.coverUrl;
+    var fallback = coverSvg(isVideo ? 'night' : (c ? c.cover : 'night'));
+    if (!isVideo) return fallback;
+    return fallback + '<img class="cover-img" src="' + esc(c.coverUrl) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'" />';
+  }
+
+  function at(offset, hour, minute) {
+    var d = new Date();
+    d.setDate(d.getDate() - offset);
+    d.setHours(hour, minute, 0, 0);
+    return d.toISOString();
+  }
+
+  function seedState() {
+    var collections = [
+      { id: 'c1', title: '深夜 Lo-fi 电台', topic: '夜晚', duration: 45, cover: 'night', link: 'https://search.bilibili.com/all?keyword=' + encodeURIComponent('深夜 lofi 专注'), createdAt: at(30, 20, 0) },
+      { id: 'c2', title: '窗外下雨时', topic: '白噪音', duration: 60, cover: 'rain', link: 'https://search.bilibili.com/all?keyword=' + encodeURIComponent('雨声 白噪音 专注'), createdAt: at(26, 21, 0) },
+      { id: 'c3', title: '咖啡馆爵士一小时', topic: '咖啡馆', duration: 60, cover: 'cafe', link: 'https://search.bilibili.com/all?keyword=' + encodeURIComponent('咖啡馆 爵士 学习'), createdAt: at(24, 10, 0) },
+      { id: 'c4', title: '钢琴练习曲 · 专注版', topic: '钢琴', duration: 40, cover: 'piano', link: 'https://search.bilibili.com/all?keyword=' + encodeURIComponent('钢琴 练习曲 专注'), createdAt: at(20, 19, 0) },
+      { id: 'c5', title: '清晨森林 · 自然声', topic: '自然', duration: 50, cover: 'forest', link: 'https://search.bilibili.com/all?keyword=' + encodeURIComponent('森林 清晨 自然声'), createdAt: at(18, 8, 0) },
+      { id: 'c6', title: '深海潜行 · 环境音', topic: '白噪音', duration: 70, cover: 'ocean', link: 'https://search.bilibili.com/all?keyword=' + encodeURIComponent('深海 环境音 专注'), createdAt: at(16, 22, 0) }
+    ];
+    var sessions = [
+      { id: 's1', collectionId: 'c2', at: at(0, 21, 10), minutes: 60, note: '重写播放器状态机，顺手清了三处旧逻辑', tags: ['写代码'] },
+      { id: 's2', collectionId: 'c1', at: at(0, 9, 20), minutes: 45, note: '把首页信息架构和图稿整理完', tags: ['设计'] },
+      { id: 's3', collectionId: 'c4', at: at(1, 20, 40), minutes: 40, note: '读《深度工作》第三章，记了两页', tags: ['阅读'] },
+      { id: 's4', collectionId: 'c3', at: at(1, 9, 30), minutes: 60, note: '整理报价单和下周排期', tags: ['工作'] },
+      { id: 's5', collectionId: 'c6', at: at(2, 13, 10), minutes: 70, note: '只开着环境音把方案写完', tags: ['写作'] },
+      { id: 's6', collectionId: 'c1', at: at(2, 19, 0), minutes: 45, note: '', tags: [] },
+      { id: 's7', collectionId: 'c5', at: at(2, 8, 40), minutes: 50, note: '剪完客户 vlog 的粗剪', tags: ['剪辑'] },
+      { id: 's8', collectionId: 'c3', at: at(3, 15, 20), minutes: 60, note: '回邮件，排下个月的档期', tags: ['工作'] },
+      { id: 's9', collectionId: 'c6', at: at(4, 22, 15), minutes: 70, note: '补觉前的环境音，顺便背了单词', tags: ['学习'] },
+      { id: 's10', collectionId: 'c2', at: at(4, 10, 5), minutes: 60, note: '修 bug，整理了素材库', tags: ['写代码'] }
+    ];
+    return { theme: 'cool', collections: collections, sessions: sessions };
+  }
+
+  function topicsOf(c) {
+    if (!c) return [];
+    var list = Array.isArray(c.topics) ? c.topics : (typeof c.topic === 'string' && c.topic ? [c.topic] : []);
+    return list.filter(function (t, i) {
+      return typeof t === 'string' && t && list.indexOf(t) === i;
+    });
+  }
+
+  function topicChipsHtml(c, max) {
+    var list = topicsOf(c);
+    if (!list.length) return '<span class="chip-topic topic-more">未分类</span>';
+    var shown = typeof max === 'number' ? list.slice(0, max) : list;
+    var html = shown.map(function (t) { return '<span class="chip-topic">' + esc(t) + '</span>'; }).join('');
+    if (typeof max === 'number' && list.length > max) {
+      html += '<span class="chip-topic topic-more">+' + (list.length - max) + '</span>';
+    }
+    return html;
+  }
+
+  function normalizeState(data) {
+    if (!data || typeof data !== 'object') data = seedState();
+    if (!Array.isArray(data.collections)) data.collections = [];
+    if (!Array.isArray(data.sessions)) data.sessions = [];
+    if (!Array.isArray(data.topics)) data.topics = TOPICS.slice();
+    data.topics = data.topics.filter(function (t, i) {
+      return typeof t === 'string' && t.trim() && data.topics.indexOf(t) === i;
+    });
+    data.collections.forEach(function (c) {
+      topicsOf(c).forEach(function (t) {
+        if (data.topics.indexOf(t) < 0) data.topics.push(t);
+      });
+    });
+    data.collections.forEach(function (c) {
+      var list = topicsOf(c);
+      c.topics = list;
+      c.topic = list[0] || '';
+    });
+    var now = Date.now();
+    data.sessions.forEach(function (s) {
+      var t = new Date(s.at).getTime();
+      if (isFinite(t) && t > now + 60000) {
+        while (t > now + 60000) t -= 86400000;
+        s.at = new Date(t).toISOString();
+      }
+    });
+    var p = data.profile && typeof data.profile === 'object' ? data.profile : {};
+    data.profile = {
+      nickname: typeof p.nickname === 'string' && p.nickname.trim() ? p.nickname.trim().slice(0, 16) : '自由职业者',
+      bio: typeof p.bio === 'string' ? p.bio.slice(0, 60) : '本机专注档案',
+      avatar: typeof p.avatar === 'string' && /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(p.avatar) ? p.avatar : ''
+    };
+    return data;
+  }
+
+  function loadState() {
+    var parsed = null;
+    try {
+      var raw = localStorage.getItem(DATA_KEY);
+      if (raw) {
+        parsed = JSON.parse(raw);
+        if (!(parsed && Array.isArray(parsed.collections) && Array.isArray(parsed.sessions))) {
+          parsed = null;
+        } else if (!parsed.theme) {
+          parsed.theme = 'cool';
+        }
+      }
+    } catch (error) { parsed = null; }
+    return normalizeState(parsed || seedState());
+  }
+
+  var state = loadState();
+  var storageWarned = false;
+
+  function saveState() {
+    try {
+      localStorage.setItem(DATA_KEY, JSON.stringify(state));
+    } catch (error) {
+      if (!storageWarned) {
+        storageWarned = true;
+        toast('当前预览无法保存，改动只在本次页面内有效');
+      }
+    }
+  }
+  // ---------------------------------------------------------------- 番茄进度存档
+  //
+  // 以前的「已专注多久」只活在内存里，App 一旦被系统清掉、手机重启、
+  // 或者手滑把后台划掉，这一颗番茄就从 0 开始了。这里改成边跑边落盘：
+  // 进度每 5 秒写一次，暂停/拖动/结算这些关键节点立刻写，
+  // 切后台和页面卸载时再补一次，重开就能接着走。
+
+  var playerSavedAt = 0;
+
+  function persistPlayer(force) {
+    if (!player) { clearPlayerSnapshot(); return; }
+    var now = Date.now();
+    if (!force && now - playerSavedAt < 5000) return;
+    playerSavedAt = now;
+    try {
+      localStorage.setItem(FOCUS_KEY, JSON.stringify({
+        collectionId: player.collectionId,
+        elapsed: Math.round(player.elapsed * 10) / 10,
+        audioTotal: Math.round((player.audioTotal || 0) * 10) / 10,
+        playing: !!player.playing,
+        savedAt: new Date(now).toISOString()
+      }));
+    } catch (error) { /* 存不进去就算了，不影响这次专注 */ }
+  }
+
+  function loadPlayerSnapshot() {
+    var snap = null;
+    try {
+      var raw = localStorage.getItem(FOCUS_KEY);
+      if (raw) snap = JSON.parse(raw);
+    } catch (error) { snap = null; }
+    if (!snap || typeof snap !== 'object') return null;
+    var elapsed = Number(snap.elapsed);
+    if (!isFinite(elapsed) || elapsed <= 0) return null;
+    if (!getCollection(snap.collectionId)) return null;
+    var audioTotal = Number(snap.audioTotal);
+    if (!isFinite(audioTotal) || audioTotal < 0) audioTotal = 0;
+    return {
+      collectionId: snap.collectionId,
+      elapsed: elapsed,
+      audioTotal: audioTotal,
+      playing: !!snap.playing,
+      savedAt: snap.savedAt || ''
+    };
+  }
+
+  function clearPlayerSnapshot() {
+    playerSavedAt = 0;
+    try { localStorage.removeItem(FOCUS_KEY); } catch (error) {}
+  }
+
+  /**
+   * 冷启动时把上次没走完的番茄接回来。
+   * 不自动播放：WebView 里音频得等用户手势才能出声，
+   * 而且一打开 App 就突然响起来也吓人。只把进度摆回去，等用户自己点继续。
+   */
+  function restorePlayer() {
+    var snap = loadPlayerSnapshot();
+    if (!snap) { clearPlayerSnapshot(); return false; }
+    var c = getCollection(snap.collectionId);
+    if (!c) { clearPlayerSnapshot(); return false; }
+    player = {
+      collectionId: c.id,
+      elapsed: Math.min(snap.elapsed, snap.audioTotal > 1 ? snap.audioTotal : snap.elapsed),
+      playing: false,
+      audioTotal: snap.audioTotal || c.audioDuration || 0,
+      restored: true
+    };
+    return true;
+  }
+
+  function afterRestore() {
+    if (!player) return;
+    var total = playerTotalSeconds();
+    // 上次其实已经走完，只是没来得及弹结算，直接收下这颗
+    if (total > 1 && player.elapsed >= total - 0.5) {
+      player.elapsed = total;
+      player.playing = false;
+      updatePlayerUI();
+      finishFocus();
+      return;
+    }
+    updatePlayerUI();
+    updateHeroLive();
+    toast('上次的番茄接着算，已专注 ' + fmtClock(player.elapsed));
+  }
+
+  function applyTheme() {
+    document.documentElement.dataset.theme = state.theme;
+    var meta = document.getElementById('themeColorMeta');
+    if (meta) {
+      var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+      if (bg) meta.setAttribute('content', bg);
+    }
+  }
+
+  function getCollection(id) {
+    for (var i = 0; i < state.collections.length; i++) {
+      if (state.collections[i].id === id) return state.collections[i];
+    }
+    return null;
+  }
+  function sessionsOf(id) {
+    return state.sessions.filter(function (s) { return s.collectionId === id; });
+  }
+  function lastSessionAt(id) {
+    var list = sessionsOf(id).sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    return list.length ? list[0].at : null;
+  }
+  function todaySessions() {
+    var key = todayKey();
+    return state.sessions.filter(function (s) { return dkey(s.at) === key; });
+  }
+  function totalMinutes(list) {
+    return list.reduce(function (sum, s) { return sum + (Number(s.minutes) || 0); }, 0);
+  }
+  function streakDays() {
+    var days = {};
+    state.sessions.forEach(function (s) { days[dkey(s.at)] = true; });
+    var cursor = new Date();
+    if (!days[dkey(cursor)]) {
+      cursor.setDate(cursor.getDate() - 1);
+      if (!days[dkey(cursor)]) return 0;
+    }
+    var count = 0;
+    while (days[dkey(cursor)]) {
+      count += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return count;
+  }
+
+  var app = $('#app');
+  var tabbar = $('#tabbar');
+  var doneDialog = $('#doneDialog');
+  var collectionDialog = $('#collectionDialog');
+  var confirmDialog = $('#confirmDialog');
+  var toastEl = $('#toast');
+  var libSearch = $('#libSearch');
+  var libSort = $('#libSort');
+  var topicChips = $('#topicChips');
+  var seek = $('#playerSeek');
+  var doneNote = $('#doneNote');
+  var collLink = $('#collLink');
+  var collTitle = $('#collTitle');
+  var collTopicPicker = $('#collTopicPicker');
+  var collDuration = $('#collDuration');
+  var topicDialog = $('#topicDialog');
+  var topicManageList = $('#topicManageList');
+  var topicNew = $('#topicNew');
+  var profileDialog = $('#profileDialog');
+  var profileNickname = $('#profileNickname');
+  var profileBio = $('#profileBio');
+  var avatarInput = $('#avatarInput');
+
+  var view = 'home';
+  var activeTab = 'home';
+  var detailId = null;
+  var libFilter = '全部';
+  var libQuery = '';
+  var libSortBy = 'recent';
+  var player = null;
+  var playerReturn = null;
+  var isSeeking = false;
+  var editingId = null;
+  var selectedCover = 'night';
+  var selectedTopics = [];
+  var coverManual = false;
+  var videoCoverUrl = '';
+  var titleAuto = true;
+  var titleBaseline = '';
+  var durationAuto = true;
+  var videoRequestId = 0;
+  var titleLinkTimer = null;
+  var lastInfoLink = '';
+  // App 里会注入原生桥：短链解析、封面缓存、音轨下载都走它；浏览器里为 null，走原来的 JSONP
+  var NATIVE = window.PotatoNative || null;
+  var videoMeta = { bvid: '', cid: 0 };
+  var audioProgress = {};
+  var playerAudio = null;
+  var playerAudioBvid = '';
+  var doneCollectionId = null;
+
+  // 当前番茄的总秒数：有真实音轨就用音轨时长，否则退回合集设置的分钟数
+  function playerTotalSeconds() {
+    if (player && player.audioTotal && player.audioTotal > 1) return player.audioTotal;
+    var c = getCollection(player ? player.collectionId : null);
+    return c ? (c.duration * 60) : 0;
+  }
+  var pendingConfirm = null;
+  var toastTimer = null;
+  var pendingAvatar = '';
+
+  function toast(message, ms) {
+    if (!toastEl) return;
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, ms || 2600);
+  }
+
+  function buildChrome() {
+    $('#tabIconHome').innerHTML = icon('timer', 20);
+    $('#tabIconLibrary').innerHTML = icon('grid', 19);
+    $('#tabIconRecords').innerHTML = icon('chart', 20);
+    $('#tabIconProfile').innerHTML = icon('user', 20);
+    $('[data-action="add-collection"]').innerHTML = icon('plus', 22);
+    $('#searchIcon').innerHTML = icon('search', 18);
+    $('[data-action="clear-search"]').innerHTML = icon('close', 16);
+    $('#sortChevron').innerHTML = icon('chevron', 12);
+    $('#editTopicsIcon').innerHTML = icon('edit', 15);
+    $('[data-action="close-dialog"][data-target="collectionDialog"]').innerHTML = icon('close', 20);
+    $('[data-action="close-dialog"][data-target="topicDialog"]').innerHTML = icon('close', 20);
+    $('[data-action="close-dialog"][data-target="profileDialog"]').innerHTML = icon('close', 20);
+    $('[data-action="close-player"]').innerHTML = icon('back', 22);
+    $('#playerBili').innerHTML = icon('external', 20);
+    $('.search-clear', $('#screen-library')).hidden = true;
+    $('[data-action="rewind"]').innerHTML = icon('rewind', 22);
+    $('[data-action="forward"]').innerHTML = icon('forward', 22);
+    $('#playBtn').innerHTML = icon('pause', 28);
+    $('#doneBadge').innerHTML = icon('check', 32);
+    $$('[data-action="close-dialog"][data-target="collectionDialog"]')[1].innerHTML = icon('close', 18);
+    $('#playBtn').innerHTML = icon('pause', 28);
+  }
+
+  function buildChips() {
+    if (libFilter !== '全部' && state.topics.indexOf(libFilter) < 0) libFilter = '全部';
+    var labels = ['全部'].concat(state.topics);
+    topicChips.innerHTML = labels.map(function (label) {
+      return '<button class="chip" type="button" data-action="set-topic" data-topic="' + esc(label) + '" aria-pressed="' + (label === libFilter) + '">' + esc(label) + '</button>';
+    }).join('');
+  }
+
+  function buildTicks() {
+    var svg = $('#dialTicks');
+    var ns = 'http://www.w3.org/2000/svg';
+    svg.textContent = '';
+    for (var i = 0; i < 60; i += 1) {
+      var angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+      var major = i % 5 === 0;
+      var inner = major ? 80 : 86;
+      var outer = 94;
+      var line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', String(100 + Math.cos(angle) * inner));
+      line.setAttribute('y1', String(100 + Math.sin(angle) * inner));
+      line.setAttribute('x2', String(100 + Math.cos(angle) * outer));
+      line.setAttribute('y2', String(100 + Math.sin(angle) * outer));
+      line.setAttribute('data-i', String(i));
+      line.setAttribute('class', major ? 'major' : '');
+      svg.appendChild(line);
+    }
+  }
+
+  function syncTabs() {
+    $$('#tabbar [data-nav]').forEach(function (btn) {
+      if (btn.dataset.nav === activeTab) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+  }
+
+  function setView(next) {
+    view = next;
+    app.dataset.view = next;
+    $$('[data-screen]').forEach(function (screen) {
+      screen.hidden = screen.dataset.screen !== next;
+    });
+    tabbar.hidden = next === 'player';
+    if (next === 'home') renderHome();
+    if (next === 'library') renderLibrary();
+    if (next === 'records') renderRecords();
+    if (next === 'profile') renderProfile();
+    if (next === 'detail') renderDetail();
+    if (next === 'player') updatePlayerUI();
+    syncTabs();
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    detailId = null;
+    setView(tab);
+  }
+
+  function refreshAll() {
+    if (view === 'home') renderHome();
+    if (view === 'library') renderLibrary();
+    if (view === 'records') renderRecords();
+    if (view === 'profile') renderProfile();
+    if (view === 'detail') renderDetail();
+  }
+
+  function renderHome() {
+    var now = new Date();
+    var hour = now.getHours();
+    var greet = hour < 5 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好';
+    $('#homeDate').textContent = (now.getMonth() + 1) + '月' + now.getDate() + '日 · 周' + WEEK[now.getDay()] + ' · ' + greet;
+
+    var today = todaySessions();
+    $('#homeStats').innerHTML =
+      '<div class="stat"><span class="stat-num">' + today.length + '</span><span class="stat-label">今日番茄</span></div>' +
+      '<div class="stat"><span class="stat-num">' + totalMinutes(today) + '</span><span class="stat-label">专注分钟</span></div>' +
+      '<div class="stat"><span class="stat-num">' + streakDays() + '</span><span class="stat-label">连续天数</span></div>';
+
+    var heroWrap = $('#homeHero');
+    var railWrap = $('#homeRailWrap');
+    var rail = $('#homeRail');
+
+    if (!state.collections.length) {
+      heroWrap.innerHTML = '<div class="panel empty-card"><h2>还没有音乐合集</h2><p>把一个 B 站专注音乐链接放进来，它就是一个番茄钟。</p><button class="btn btn-primary" type="button" data-action="add-collection">' + icon('plus', 20) + '添加合集</button></div>';
+      railWrap.hidden = true;
+      return;
+    }
+
+    var activeCollection = player ? getCollection(player.collectionId) : null;
+    var isLive = Boolean(activeCollection && player.elapsed < playerTotalSeconds());
+    var latest = state.sessions.slice().sort(function (a, b) { return new Date(b.at) - new Date(a.at); })[0] || null;
+    var latestCollection = latest ? getCollection(latest.collectionId) : null;
+    var mode = isLive ? 'live' : (latestCollection ? 'last' : 'idle');
+    var current = isLive ? activeCollection : (latestCollection || state.collections[0]);
+
+    var heroHtml;
+    if (mode === 'live') {
+      var total = playerTotalSeconds();
+      var remaining = Math.max(0, total - player.elapsed);
+      var pct = total ? Math.min(100, (player.elapsed / total) * 100) : 0;
+      heroHtml =
+        '<article class="hero panel">' +
+          '<div class="hero-art">' + coverMarkup(current) + '</div>' +
+          '<div class="hero-body">' +
+            '<div class="hero-tags">' + topicChipsHtml(current, 2) + '<span class="hero-state' + (player.playing ? '' : ' paused') + '" id="heroState">' + (player.playing ? '专注中' : '已暂停') + '</span></div>' +
+            '<h2 class="hero-title od-clamp-2">' + esc(current.title) + '</h2>' +
+            '<p class="hero-meta"><span class="hero-live" id="heroLive">已专注 ' + fmtClock(player.elapsed) + ' · 还剩 ' + fmtClock(remaining) + '</span></p>' +
+            '<div class="hero-progress" role="progressbar" aria-label="本轮专注进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(pct) + '"><span id="heroProgressFill" style="width:' + pct.toFixed(2) + '%"></span></div>' +
+            '<button class="btn btn-primary btn-block" type="button" data-action="start-focus" data-id="' + current.id + '">' + icon('play', 20) + '<span>' + (player.playing ? '回到番茄' : '继续专注') + '</span></button>' +
+          '</div>' +
+        '</article>';
+    } else if (mode === 'last') {
+      var when = fmtWhen(latest.at);
+      heroHtml =
+        '<article class="hero panel">' +
+          '<div class="hero-art">' + coverMarkup(current) + '</div>' +
+          '<div class="hero-body">' +
+            '<div class="hero-tags">' + topicChipsHtml(current, 2) + '<span class="hero-time">上次专注</span></div>' +
+            '<h2 class="hero-title od-clamp-2">' + esc(current.title) + '</h2>' +
+            '<p class="hero-meta">' + latest.minutes + ' 分钟 · ' + when + '</p>' +
+            (latest.note ? '<p class="hero-note od-clamp-2">' + esc(latest.note) + '</p>' : '') +
+            '<button class="btn btn-primary btn-block" type="button" data-action="start-focus" data-id="' + current.id + '">' + icon('play', 20) + '<span>再来一颗</span></button>' +
+          '</div>' +
+        '</article>';
+    } else {
+      var count = sessionsOf(current.id).length;
+      heroHtml =
+        '<article class="hero panel">' +
+          '<div class="hero-art">' + coverMarkup(current) + '</div>' +
+          '<div class="hero-body">' +
+            '<div class="hero-tags">' + topicChipsHtml(current, 2) + '<span class="hero-time">每次 ' + current.duration + ' 分钟</span></div>' +
+            '<h2 class="hero-title od-clamp-2">' + esc(current.title) + '</h2>' +
+            '<p class="hero-meta">' + count + ' 颗番茄 · 累计 ' + fmtMinutes(totalMinutes(sessionsOf(current.id))) + '</p>' +
+            '<button class="btn btn-primary btn-block" type="button" data-action="start-focus" data-id="' + current.id + '">' + icon('play', 20) + '<span>开始专注</span></button>' +
+          '</div>' +
+        '</article>';
+    }
+    heroWrap.innerHTML = heroHtml;
+
+    var others = state.collections.filter(function (c) { return c.id !== current.id; })
+      .sort(function (a, b) {
+        var ta = lastSessionAt(a.id) || a.createdAt;
+        var tb = lastSessionAt(b.id) || b.createdAt;
+        return new Date(tb) - new Date(ta);
+      })
+      .slice(0, 5);
+
+    railWrap.hidden = others.length === 0;
+    rail.innerHTML = others.map(function (c) {
+      return '<button class="mini-card" type="button" data-action="open-collection" data-id="' + c.id + '" aria-label="打开合集：' + esc(c.title) + '">' +
+        '<span class="mini-art">' + coverMarkup(c) + '</span>' +
+        '<span class="mini-title od-clamp-2">' + esc(c.title) + '</span>' +
+        '<span class="mini-meta">' + sessionsOf(c.id).length + ' 颗 · ' + c.duration + ' 分钟</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  function updateHeroLive() {
+    if (!player || view !== 'home') return;
+    var c = getCollection(player.collectionId);
+    if (!c) return;
+    var total = playerTotalSeconds();
+    if (!total) return;
+    var remaining = Math.max(0, total - player.elapsed);
+    var live = $('#heroLive');
+    if (live) live.textContent = '已专注 ' + fmtClock(player.elapsed) + ' · 还剩 ' + fmtClock(remaining);
+    var stateEl = $('#heroState');
+    if (stateEl) {
+      stateEl.textContent = player.playing ? '专注中' : '已暂停';
+      stateEl.classList.toggle('paused', !player.playing);
+    }
+    var pct = Math.min(100, (player.elapsed / total) * 100);
+    var fill = $('#heroProgressFill');
+    if (fill) fill.style.width = pct.toFixed(2) + '%';
+    var bar = fill ? fill.parentNode : null;
+    if (bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
+  }
+
+  function sortedLibrary() {
+    var list = state.collections.slice();
+    if (libFilter !== '全部') {
+      list = list.filter(function (c) { return topicsOf(c).indexOf(libFilter) >= 0; });
+    }
+    var q = libQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(function (c) {
+        var notes = sessionsOf(c.id).map(function (s) { return s.note || ''; }).join(' ');
+        return (c.title + ' ' + topicsOf(c).join(' ') + ' ' + notes).toLowerCase().indexOf(q) >= 0;
+      });
+    }
+    if (libSortBy === 'count') {
+      list.sort(function (a, b) { return sessionsOf(b.id).length - sessionsOf(a.id).length; });
+    } else if (libSortBy === 'duration') {
+      list.sort(function (a, b) { return b.duration - a.duration; });
+    } else {
+      list.sort(function (a, b) {
+        var ta = lastSessionAt(a.id) || a.createdAt;
+        var tb = lastSessionAt(b.id) || b.createdAt;
+        return new Date(tb) - new Date(ta);
+      });
+    }
+    return list;
+  }
+
+  function renderLibrary() {
+    var list = sortedLibrary();
+    $('#libCount').textContent = libQuery ? '找到 ' + list.length + ' 个合集' : '共 ' + state.collections.length + ' 个合集';
+    $('#libNote').textContent = list.length ? '点开封面，看看这个合集里做了什么' : '';
+
+    var grid = $('#libGrid');
+    var empty = $('#libEmpty');
+
+    if (!list.length) {
+      grid.innerHTML = '';
+      grid.hidden = true;
+      empty.hidden = false;
+      var hasQuery = libQuery.trim().length > 0;
+      empty.innerHTML = '<div class="empty">' +
+        '<div class="empty-ico">' + icon(hasQuery ? 'search' : 'grid', 26) + '</div>' +
+        '<p class="empty-title">' + (hasQuery ? '没有找到合集' : '这里还没有合集') + '</p>' +
+        '<p class="empty-text">' + (hasQuery ? '换个关键词，或把筛选切回「全部」。' : '粘贴一个 B 站专注音乐链接，就能开始种番茄。') + '</p>' +
+        '<button class="btn btn-soft" type="button" data-action="' + (hasQuery ? 'clear-search' : 'add-collection') + '">' + (hasQuery ? '清除搜索' : '添加合集') + '</button>' +
+      '</div>';
+    } else {
+      empty.hidden = true;
+      grid.hidden = false;
+      grid.innerHTML = list.map(function (c) {
+        var count = sessionsOf(c.id).length;
+        return '<button class="coll-card" type="button" data-action="open-collection" data-id="' + c.id + '" aria-label="查看合集：' + esc(c.title) + '">' +
+          '<span class="coll-art">' + coverMarkup(c) + '</span>' +
+          '<span class="coll-body">' +
+            '<span class="coll-topics">' + topicChipsHtml(c, 2) + '</span>' +
+            '<span class="coll-title od-clamp-2">' + esc(c.title) + '</span>' +
+            '<span class="coll-meta">' + count + ' 颗番茄 · ' + c.duration + ' 分钟</span>' +
+          '</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    $$('[data-action="set-topic"]', topicChips).forEach(function (btn) {
+      btn.setAttribute('aria-pressed', String(btn.dataset.topic === libFilter));
+    });
+    libSort.value = libSortBy;
+    $('#libSearch').value = libQuery;
+    $('[data-action="clear-search"]', $('#screen-library')).hidden = libQuery.length === 0;
+  }
+
+  function tagsMarkup(tags) {
+    if (!tags || !tags.length) return '<div class="tag-row"><span class="tag muted">未记录</span></div>';
+    return '<div class="tag-row">' + tags.map(function (tag) { return '<span class="tag">' + esc(tag) + '</span>'; }).join('') + '</div>';
+  }
+
+  // ---------------------------------------------------------------- 本地音轨
+
+  function fmtSize(bytes) {
+    var n = Number(bytes) || 0;
+    if (n >= 1024 * 1024) return (Math.round(n / 104857.6) / 10) + ' MB';
+    if (n >= 1024) return Math.round(n / 1024) + ' KB';
+    return n + ' B';
+  }
+
+  function audioInfoOf(bvid, cid) {
+    if (!NATIVE || !NATIVE.audioInfo || !bvid) return null;
+    try { return JSON.parse(NATIVE.audioInfo(bvid, String(cid || 0))); } catch (err) { return null; }
+  }
+
+  /**
+   * 查音轨信息，并把原生那边实际用的 cid 回填进合集。
+   * 老合集建的时候没存 cid，一直传 0 会让原生每次都得扫目录找文件。
+   */
+  function audioInfoFor(c) {
+    var info = audioInfoOf(bvidOf(c), c && c.cid);
+    if (info && info.exists && info.cid && (!c.cid || c.cid !== info.cid)) {
+      c.cid = info.cid;
+      saveState();
+    }
+    return info;
+  }
+
+  function bvidOf(c) {
+    if (!c) return '';
+    if (c.bvid) return c.bvid;
+    var p = linkParts(c.link || '');
+    return p && p.bvid ? p.bvid : '';
+  }
+
+  function audioCardHtml(c) {
+    if (!NATIVE || !bvidOf(c)) return '';
+    var info = audioInfoFor(c);
+    if (info && info.exists) {
+      return '<div class="audio-card" data-audio="' + esc(bvidOf(c)) + '">' +
+          '<span class="audio-ico" aria-hidden="true">' + icon('check', 16) + '</span>' +
+          '<div class="audio-copy"><strong>本地音轨已就绪</strong><span>' + fmtSize(info.size) + ' · 断网也能听</span></div>' +
+          '<button class="audio-btn" type="button" data-action="delete-audio" data-id="' + esc(c.id) + '">删除</button>' +
+        '</div>';
+    }
+    if (typeof audioProgress[c.id] === 'number') {
+      return '<div class="audio-card" data-audio="' + esc(bvidOf(c)) + '">' +
+          '<span class="audio-ico" aria-hidden="true">' + icon('down', 16) + '</span>' +
+          '<div class="audio-copy"><strong>正在下载音轨</strong><span data-audio-progress="' + esc(c.id) + '">' + audioProgress[c.id] + '%</span></div>' +
+        '</div>';
+    }
+    return '<div class="audio-card" data-audio="' + esc(bvidOf(c)) + '">' +
+        '<span class="audio-ico" aria-hidden="true">' + icon('down', 16) + '</span>' +
+        '<div class="audio-copy"><strong>还没有本地音轨</strong><span>下载后离线也能播放</span></div>' +
+        '<button class="audio-btn" type="button" data-action="download-audio" data-id="' + esc(c.id) + '">下载</button>' +
+      '</div>';
+  }
+
+  function audioNote(c) {
+    if (!NATIVE) return '在 App 里可以下载音轨，离线也能听。';
+    if (!bvidOf(c)) return '这个合集还没关联具体视频，编辑后粘贴视频链接就能下载音轨。';
+    var info = audioInfoFor(c);
+    if (info && info.exists) return '开始专注会播放本地音轨，飞行模式也能听。';
+    return '下载音轨后可以离线播放，也可以点上面的按钮直接进 B 站看原视频。';
+  }
+
+  function startAudioDownload(id) {
+    var c = getCollection(id);
+    if (!c) return;
+    if (!NATIVE || !NATIVE.downloadAudio) { toast('浏览器里不支持下载，请在 App 里操作'); return; }
+    var bv = bvidOf(c);
+    if (!bv) { toast('这个合集还没识别到视频号，请编辑后重新粘贴链接'); return; }
+    audioProgress[id] = 0;
+    renderDetail();
+    try {
+      NATIVE.downloadAudio(bv, String(c.cid || 0), id);
+    } catch (err) {
+      delete audioProgress[id];
+      renderDetail();
+      toast('下载没能开始，请重试');
+    }
+  }
+
+  function removeAudio(id) {
+    var c = getCollection(id);
+    if (!c || !NATIVE) return;
+    var bv = bvidOf(c);
+    if (!bv) return;
+    try { NATIVE.deleteAudio(bv, String(c.cid || 0)); } catch (err) {}
+    if (playerAudioBvid === bv) stopPlayerAudio();
+    toast('本地音轨已删除');
+    renderDetail();
+  }
+
+  window.__potatoAudioProgress = function (id, percent) {
+    audioProgress[id] = Math.max(0, Math.min(100, Number(percent) || 0));
+    var el = document.querySelector('[data-audio-progress="' + id + '"]');
+    if (el) el.textContent = audioProgress[id] + '%';
+  };
+
+  window.__potatoAudioDone = function (id, payload) {
+    var data = null;
+    try { data = JSON.parse(payload); } catch (err) { data = null; }
+    delete audioProgress[id];
+    var ok = !!(data && data.ok);
+    // 失败原因现在会带上具体节点和返回码，看的时间得留够
+    if (ok) toast('音轨已存到本地');
+    else toast((data && data.message) || '音轨下载失败', 8000);
+    if (ok) {
+      // 把原生那边实际用的 cid 和真实时长回填进合集，
+      // 老合集没存 cid 也能对上文件，番茄总长直接就是音轨长度。
+      var col = getCollection(id);
+      if (col) {
+        if (data.cid && (!col.cid || col.cid !== data.cid)) col.cid = data.cid;
+        if (data.duration && data.duration > 0) {
+          var secs = Math.round(data.duration / 1000);
+          if (!col.audioDuration || Math.abs(col.audioDuration - secs) > 1) {
+            col.audioDuration = secs;
+          }
+        }
+        saveState();
+      }
+    }
+    if (view === 'detail' && detailId === id) renderDetail();
+    if (ok && player && player.collectionId === id) {
+      playerAudioBvid = '';
+      syncPlayerAudio();
+    }
+  };
+
+  function stopPlayerAudio() {
+    if (playerAudio) {
+      try { playerAudio.pause(); } catch (err) {}
+    }
+    playerAudioBvid = '';
+    releaseAudioBlob();
+  }
+
+  /**
+   * 同步专注状态给原生，用来起停前台服务。
+   * 专注期间服务常驻，锁屏和切后台时进程不会被系统清掉，音频和计时都不中断。
+   * state: 'playing' 专注中 / 'paused' 已暂停 / 'stop' 结束。
+   */
+  function nativeFocus(state) {
+    if (!NATIVE || !NATIVE.setFocusState) return;
+    try { NATIVE.setFocusState(state); } catch (err) {}
+  }
+
+  // Blob URL 用完就释放，不然音轨文件多起来会把内存吃满
+  var playerAudioBlobUrl = '';
+  function releaseAudioBlob() {
+    if (playerAudioBlobUrl) {
+      try { URL.revokeObjectURL(playerAudioBlobUrl); } catch (err) {}
+      playerAudioBlobUrl = '';
+    }
+  }
+
+  /**
+   * 把本地音轨读成 Blob 再播放。
+   *
+   * 直接让 <audio> 指向 App 的 https 地址，浏览器会发 Range 请求，
+   * 而 WebView 对这种拦截出来的分段响应校验很严，偏移量一大就整条失败，
+   * 结果是音频能播但拖不动、播到后面卡住。
+   * 先 fetch 成 Blob 就没这个问题了：Blob 支持 seek，时长也准。
+   */
+  function loadAudioBlob(url, cb) {
+    if (!url) { cb(null); return; }
+    try {
+      fetch(url, { cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.arrayBuffer();
+        })
+        .then(function (buf) {
+          releaseAudioBlob();
+          playerAudioBlobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mp4' }));
+          cb(playerAudioBlobUrl);
+        })
+        .catch(function () { cb(null); });
+    } catch (err) {
+      cb(null);
+    }
+  }
+
+  /**
+   * 把音频定位到番茄当前进度。
+   * 冷启动恢复时音频总是从 0 开始，不定位的话进度会当场倒退。
+   * 元数据没就绪时设置 currentTime 会被忽略，所以 loadedmetadata 里会再补一次。
+   */
+  function seekAudioToProgress() {
+    if (!player || !playerAudio) return;
+    var want = player.elapsed;
+    if (!(want > 0.5)) return;
+    var dur = playerAudio.duration;
+    if (isFinite(dur) && dur > 0 && want > dur) want = dur;
+    if (Math.abs(playerAudio.currentTime - want) < 1) return;
+    try { playerAudio.currentTime = want; } catch (e) {}
+  }
+
+  function syncPlayerAudio() {
+    if (!NATIVE || !NATIVE.audioInfo) return;
+    if (!player) { stopPlayerAudio(); return; }
+    var c = getCollection(player.collectionId);
+    var bv = bvidOf(c);
+    if (!bv) { stopPlayerAudio(); return; }
+    var info = audioInfoFor(c);
+    if (!info || !info.exists) {
+      playerAudioBvid = '';
+      if (playerAudio) { try { playerAudio.pause(); } catch (e) {} }
+      return;
+    }
+    // 原生已经把真实时长读出来了，直接拿来当番茄总长，不用等 loadedmetadata
+    if (info.duration && info.duration > 0) {
+      applyRealDuration(info.duration / 1000, c);
+    }
+    if (!playerAudio) {
+      playerAudio = document.createElement('audio');
+      playerAudio.id = 'playerAudio';
+      playerAudio.preload = 'auto';
+      playerAudio.setAttribute('playsinline', '');
+      document.body.appendChild(playerAudio);
+      // 音轨元数据一拿到，就用真实时长覆盖番茄总时长，并记进合集
+      playerAudio.addEventListener('loadedmetadata', function () {
+        if (!player) return;
+        var dur = playerAudio.duration;
+        if (isFinite(dur) && dur > 0) {
+          applyRealDuration(dur, getCollection(player.collectionId));
+        }
+        seekAudioToProgress();
+      });
+      // 音频位置变化时实时同步进度，比 1 秒轮询跟手得多
+      playerAudio.addEventListener('timeupdate', function () {
+        if (!player || !player.playing) return;
+        if (!playerAudioBvid || !isFinite(playerAudio.currentTime)) return;
+        // 冷启动恢复时定位还没生效，currentTime 会短暂停在 0，
+        // 这时候放行会把二十几分钟的进度一把拉回去
+        if (playerAudio.currentTime < player.elapsed - 2) return;
+        var total = playerTotalSeconds();
+        if (!total) return;
+        var t = Math.min(total, playerAudio.currentTime);
+        if (Math.abs(t - player.elapsed) < 0.05) return;
+        player.elapsed = t;
+        updatePlayerUI();
+        if (view === 'home') updateHeroLive();
+      });
+      // 音频一遍放完，番茄就收下
+      playerAudio.addEventListener('ended', function () {
+        if (!player) return;
+        var cur = getCollection(player.collectionId);
+        if (!cur || bvidOf(cur) !== playerAudioBvid) return;
+        player.elapsed = playerTotalSeconds();
+        player.playing = false;
+        updatePlayerUI();
+        finishFocus();
+      });
+    }
+    if (playerAudioBvid !== bv) {
+      playerAudioBvid = bv;
+      // 正在读 Blob，读完再挂上播放
+      playerAudio.removeAttribute('src');
+      loadAudioBlob(info.url, function (blobUrl) {
+        if (!blobUrl) return;
+        if (!player || player.collectionId !== c.id) return;
+        playerAudio.src = blobUrl;
+        playerAudio.loop = false; // 本地模式一遍过：音频放完即结束
+        seekAudioToProgress();
+        if (player.playing) {
+          var p = playerAudio.play();
+          if (p && p.catch) p.catch(function () {});
+        }
+      });
+      return;
+    }
+    playerAudio.loop = false; // 本地模式一遍过：音频放完即结束
+    if (player.playing) {
+      var promise = playerAudio.play();
+      if (promise && promise.catch) promise.catch(function () {});
+    } else {
+      playerAudio.pause();
+    }
+  }
+
+  /**
+   * 用音轨的真实时长设定番茄总长。
+   * 番茄的「共 X 分钟」「剩余」「进度条」全部以它为准，
+   * 保证音频播到哪，番茄就走到哪，总长和音频长度完全一致。
+   */
+  function applyRealDuration(seconds, col) {
+    if (!seconds || !isFinite(seconds) || seconds <= 0) return;
+    if (player) player.audioTotal = seconds;
+    if (col && (!col.audioDuration || Math.abs(col.audioDuration - Math.round(seconds)) > 1)) {
+      col.audioDuration = Math.round(seconds);
+      saveState();
+    }
+    if (player) {
+      var sk = $('#playerSeek');
+      if (sk) sk.max = String(Math.round(seconds));
+      var tot = $('#playerTotal');
+      if (tot) tot.textContent = '共 ' + fmtClock(seconds);
+    }
+    updatePlayerUI();
+  }
+
+  function renderDetail() {
+    var c = getCollection(detailId);
+    if (!c) {
+      detailId = null;
+      activeTab = 'library';
+      setView('library');
+      return;
+    }
+    var list = sessionsOf(c.id).sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    var count = list.length;
+    var minutes = totalMinutes(list);
+    var latest = list.length ? fmtDateTime(list[0].at) : '还没开始';
+    var body = $('#detailBody');
+
+    var notes = list.length
+      ? '<div class="notes">' + list.map(function (s) {
+          return '<article class="note-item">' +
+            '<div class="note-row"><time datetime="' + esc(s.at) + '">' + fmtDateTime(s.at) + '</time><span class="note-min">' + s.minutes + ' 分钟</span></div>' +
+            (s.note ? '<p class="note-text">' + esc(s.note) + '</p>' : '<p class="note-text muted">没有留下记录</p>') +
+            (s.tags && s.tags.length ? '<div class="tag-row">' + s.tags.map(function (tag) { return '<span class="tag">' + esc(tag) + '</span>'; }).join('') + '</div>' : '') +
+          '</article>';
+        }).join('') + '</div>'
+      : '<div class="empty"><div class="empty-ico">' + icon('clock', 26) + '</div><p class="empty-title">还没有专注记录</p><p class="empty-text">开始一次专注，结束后就能在这里看到你做了什么。</p><button class="btn btn-soft" type="button" data-action="start-focus" data-id="' + c.id + '">开始专注</button></div>';
+
+    body.innerHTML =
+      '<div class="detail-top">' +
+        '<button class="icon-btn" type="button" data-action="goto-library" aria-label="返回合集列表">' + icon('back', 22) + '</button>' +
+        '<span class="detail-top-title">合集详情</span>' +
+        '<button class="icon-btn" type="button" data-action="edit-collection" data-id="' + c.id + '" aria-label="编辑合集">' + icon('edit', 20) + '</button>' +
+      '</div>' +
+      '<article class="detail-hero panel">' +
+        '<div class="detail-art">' + coverMarkup(c) + '</div>' +
+        '<div class="detail-body">' +
+          '<div class="hero-tags">' + topicChipsHtml(c) + '<span class="hero-time">每次 ' + c.duration + ' 分钟</span></div>' +
+          '<h1 class="detail-title">' + esc(c.title) + '</h1>' +
+          '<div class="detail-stats">' +
+            '<div class="mini-stat"><span>累计番茄</span><strong>' + count + '</strong></div>' +
+            '<div class="mini-stat"><span>累计专注</span><strong>' + (minutes >= 60 ? (Math.round(minutes / 6) / 10) + ' 时' : minutes + ' 分') + '</strong></div>' +
+            '<div class="mini-stat"><span>最近一次</span><strong>' + esc(latest) + '</strong></div>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-block" type="button" data-action="start-focus" data-id="' + c.id + '">' + icon('play', 20) + '开始专注</button>' +
+          '<a class="btn btn-soft btn-block" href="' + esc(c.link) + '" data-action="open-bili" data-link="' + esc(c.link) + '" target="_blank" rel="noopener">' + icon('external', 18) + '在 B 站打开</a>' +
+          audioCardHtml(c) +
+          '<p class="detail-mode-note">' + audioNote(c) + '</p>' +
+        '</div>' +
+      '</article>' +
+      '<div class="sec-head"><h2>专注记录</h2><span class="sec-note">' + count + ' 条</span></div>' +
+      notes +
+      '<button class="btn-danger-text" type="button" data-action="delete-collection" data-id="' + c.id + '">' + icon('trash', 18) + '删除这个合集</button>';
+
+    body.parentNode.scrollTop = 0;
+  }
+
+  function renderRecords() {
+    var now = new Date();
+    var days = [];
+    for (var i = 6; i >= 0; i -= 1) {
+      var d = new Date(now);
+      d.setDate(d.getDate() - i);
+      var key = dkey(d);
+      var list = state.sessions.filter(function (s) { return dkey(s.at) === key; });
+      days.push({ key: key, date: d, list: list, count: list.length, minutes: totalMinutes(list) });
+    }
+    var weekCount = days.reduce(function (n, day) { return n + day.count; }, 0);
+    var weekMinutes = days.reduce(function (n, day) { return n + day.minutes; }, 0);
+    var max = Math.max(1, Math.max.apply(null, days.map(function (day) { return day.count; })));
+
+    var bars = days.map(function (day, index) {
+      var h = day.count ? Math.max(7, Math.round(day.count / max * 74)) : 3;
+      var x = 22 + index * 42;
+      var y = 112 - h;
+      var today = day.key === todayKey();
+      var fill = day.count ? (today ? 'var(--accent)' : 'var(--accent)') : 'var(--faint)';
+      var opacity = today ? 1 : (day.count ? '.3' : '.3');
+      var value = day.count ? '<text x="' + (x + 13) + '" y="' + (y - 7) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + day.count + '</text>' : '';
+      return '<rect x="' + x + '" y="' + y + '" width="26" height="' + h + '" rx="8" fill="' + fill + '" opacity="' + opacity + '"/>' +
+        value +
+        '<text x="' + (x + 13) + '" y="132" text-anchor="middle" font-size="9.5" fill="var(--muted)">' + WEEK[day.date.getDay()] + '</text>';
+    }).join('');
+
+    var chart = '<div class="panel chart-card">' +
+      '<div class="chart-head"><h2>本周专注</h2><span>' + weekCount + ' 颗 · ' + weekMinutes + ' 分钟</span></div>' +
+      '<svg viewBox="0 0 320 144" role="img" aria-label="最近七天每天完成的番茄数">' +
+        '<line x1="16" y1="112" x2="308" y2="112" stroke="var(--line)" stroke-width="1"/>' +
+        '<line x1="16" y1="75" x2="308" y2="75" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 5"/>' +
+        '<line x1="16" y1="38" x2="308" y2="38" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 5"/>' +
+        bars +
+      '</svg>' +
+    '</div>';
+
+    var groups = {};
+    state.sessions.forEach(function (s) {
+      var key = dkey(s.at);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(s);
+    });
+    var keys = Object.keys(groups).sort(function (a, b) { return a < b ? 1 : -1; });
+
+    var timeline = keys.length ? keys.map(function (key) {
+      var list = groups[key].sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+      var total = totalMinutes(list);
+      return '<section class="day">' +
+        '<div class="day-head"><h3>' + fmtDayLabel(key) + '</h3><span>' + list.length + ' 颗 · ' + total + ' 分钟</span></div>' +
+        '<ul class="rec-list" style="list-style:none;margin:0;padding:0">' + list.map(function (s) {
+          var c = getCollection(s.collectionId);
+          var title = c ? c.title : '已删除的合集';
+          return '<li class="rec">' +
+            '<span class="rec-thumb">' + coverMarkup(c) + '</span>' +
+            '<span class="rec-main">' +
+              '<span class="rec-top"><span class="rec-title od-truncate">' + esc(title) + '</span><span class="rec-min">' + s.minutes + ' 分钟</span></span>' +
+              '<span class="rec-note od-clamp-2">' + (s.note ? esc(s.note) : '没有留下记录') + '</span>' +
+              (s.tags && s.tags.length ? '<span class="rec-tags">' + s.tags.map(function (tag) { return '<span class="tag">' + esc(tag) + '</span>'; }).join('') + '</span>' : '') +
+            '</span>' +
+          '</li>';
+        }).join('') + '</ul>' +
+      '</section>';
+    }).join('') : '<div class="empty"><div class="empty-ico">' + icon('chart', 26) + '</div><p class="empty-title">还没有专注记录</p><p class="empty-text">完成第一颗番茄后，这里会按天记下你做了什么。</p><button class="btn btn-soft" type="button" data-action="goto-library">去挑一个合集</button></div>';
+
+    $('#recordsBody').innerHTML =
+      '<div class="page-head"><p class="eyebrow">专注记录</p><h1>一周的痕迹</h1><p class="sub">每一颗番茄都记着做了什么。</p></div>' +
+      chart +
+      timeline;
+  }
+
+  function profileInfo() {
+    if (!state.profile || typeof state.profile !== 'object') {
+      state.profile = { nickname: '自由职业者', bio: '本机专注档案', avatar: '' };
+    }
+    if (typeof state.profile.nickname !== 'string' || !state.profile.nickname) state.profile.nickname = '自由职业者';
+    if (typeof state.profile.bio !== 'string') state.profile.bio = '本机专注档案';
+    if (typeof state.profile.avatar !== 'string') state.profile.avatar = '';
+    return state.profile;
+  }
+
+  function avatarInner(profile, size) {
+    var avatar = profile && typeof profile.avatar === 'string' ? profile.avatar : '';
+    if (avatar) return '<img src="' + esc(avatar) + '" alt="" />';
+    return icon('timer', size || 28);
+  }
+
+  function brandLogoMarkup() {
+    return '<svg class="brand-logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
+      '<path class="brand-body" d="M24 13.5c-7.6 0-14 5.7-14 13.2C10 34.6 16.2 41 24 41s14-6.4 14-14.3c0-7.5-6.4-13.2-14-13.2z"/>' +
+      '<path class="brand-leaf" d="M24 13.5c-1.3-2.7-3.7-4.5-7-5 1.5 2.5 2.1 4.7 1.9 6.3"/>' +
+      '<path class="brand-leaf" d="M24 13.5c1.1-2.4 3.2-4.1 6-4.6-1.2 2.2-1.7 4.2-1.5 5.9"/>' +
+      '<path class="brand-play" d="M21.2 22.3v9.1l7.9-4.55z"/>' +
+    '</svg>';
+  }
+
+  function renderProfile() {
+    var profile = profileInfo();
+    var total = state.sessions.length;
+    var minutes = totalMinutes(state.sessions);
+    var themes = THEMES.map(function (theme) {
+      var pressed = theme[0] === state.theme;
+      return '<button class="theme-card" type="button" data-action="set-theme" data-theme-name="' + theme[0] + '" aria-pressed="' + pressed + '">' +
+        '<span class="theme-dot" style="--sw:' + theme[2] + ';--swa:' + theme[3] + '"></span>' +
+        '<span class="theme-name">' + theme[1] + '</span>' +
+        '<span class="theme-check">' + icon('check', 15) + '</span>' +
+      '</button>';
+    }).join('');
+
+    $('#profileBody').innerHTML =
+      '<header class="profile-brand">' +
+        '<span class="brand-mark">' + brandLogoMarkup() + '</span>' +
+        '<span class="brand-copy">' +
+          '<span class="brand-name">番茄专注</span>' +
+          '<span class="brand-slogan">视频播完，番茄就熟了。</span>' +
+        '</span>' +
+      '</header>' +
+      '<div class="panel profile-card">' +
+        '<button class="profile-top" type="button" data-action="edit-profile" aria-label="编辑个人信息：' + esc(profile.nickname) + '">' +
+          '<span class="avatar">' + avatarInner(profile) + '</span>' +
+          '<span class="profile-id">' +
+            '<span class="profile-name">' + esc(profile.nickname) + '</span>' +
+            '<span class="profile-bio">' + esc(profile.bio || '点击补充一句简介') + '</span>' +
+          '</span>' +
+          '<span class="profile-edit-ico" aria-hidden="true">' + icon('edit', 15) + '</span>' +
+        '</button>' +
+        '<div class="profile-stats">' +
+          '<div class="profile-stat"><strong>' + total + '</strong><span>累计番茄</span></div>' +
+          '<div class="profile-stat"><strong>' + (minutes >= 60 ? (Math.round(minutes / 6) / 10) + ' 时' : minutes) + '</strong><span>' + (minutes >= 60 ? '累计专注' : '累计分钟') + '</span></div>' +
+          '<div class="profile-stat"><strong>' + state.collections.length + '</strong><span>音乐合集</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sec-head"><h2>主题</h2><span class="sec-note">' + THEMES.length + ' 套</span></div>' +
+      '<p class="sec-sub">五套柔光配色，点一下就能换。</p>' +
+      '<div class="theme-grid">' + themes + '</div>' +
+      '<div class="sec-head"><h2>数据</h2></div>' +
+      '<div class="panel data-card">' +
+        '<div class="data-row"><span>存储方式</span><strong>本机保存</strong></div>' +
+        '<div class="data-row"><span>专注记录</span><strong>' + total + ' 条</strong></div>' +
+        '<div class="data-row"><span>累计时长</span><strong>' + fmtMinutes(minutes) + '</strong></div>' +
+      '</div>' +
+      '<button class="btn btn-soft btn-block" type="button" data-action="reset-data">恢复演示数据</button>' +
+      '<p class="foot-note">番茄专注 · 视频即计时<br>专注音乐来自你收藏的 B 站合集。</p>';
+  }
+
+  function updateAvatarPreview() {
+    var el = $('#profileAvatarPreview');
+    if (!el) return;
+    el.innerHTML = pendingAvatar ? '<img src="' + esc(pendingAvatar) + '" alt="" />' : icon('timer', 30);
+  }
+
+  function setAvatarHint(message, isError) {
+    var el = $('#avatarHint');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.toggle('is-error', Boolean(isError));
+  }
+
+  function openProfileDialog() {
+    var p = profileInfo();
+    pendingAvatar = p.avatar || '';
+    profileNickname.value = p.nickname;
+    profileBio.value = p.bio || '';
+    avatarInput.value = '';
+    setError('profileNicknameError', '');
+    setAvatarHint('支持 JPG、PNG，选择后会自动压缩');
+    updateAvatarPreview();
+    if (!profileDialog.open) profileDialog.showModal();
+    requestAnimationFrame(function () { profileNickname.focus(); });
+  }
+
+  function saveProfile() {
+    var name = profileNickname.value.trim();
+    if (!name) {
+      setError('profileNicknameError', '起一个昵称吧。');
+      profileNickname.focus();
+      return;
+    }
+    if (name.length > 16) {
+      setError('profileNicknameError', '昵称请控制在 16 个字以内。');
+      profileNickname.focus();
+      return;
+    }
+    state.profile = {
+      nickname: name,
+      bio: profileBio.value.trim().slice(0, 60),
+      avatar: pendingAvatar || ''
+    };
+    saveState();
+    profileDialog.close();
+    renderProfile();
+    toast('个人信息已更新');
+  }
+
+  function handleAvatarFile(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      setAvatarHint('请选择图片文件。', true);
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setAvatarHint('图片太大了，请选 8MB 以内的图片。', true);
+      return;
+    }
+    setAvatarHint('正在处理头像…');
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement('canvas');
+        var size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setAvatarHint('头像处理失败了，换一张试试。', true);
+          return;
+        }
+        var side = Math.min(img.width, img.height);
+        var sx = (img.width - side) / 2;
+        var sy = (img.height - side) / 2;
+        var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff';
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        pendingAvatar = canvas.toDataURL('image/jpeg', 0.84);
+        updateAvatarPreview();
+        setAvatarHint('新头像已就绪，保存后生效。');
+      };
+      img.onerror = function () { setAvatarHint('这张图片读取失败了，换一张试试。', true); };
+      img.src = String(reader.result);
+    };
+    reader.onerror = function () { setAvatarHint('图片读取失败，请重试。', true); };
+    reader.readAsDataURL(file);
+  }
+
+  function openDetail(id) {
+    if (!getCollection(id)) return;
+    detailId = id;
+    activeTab = 'library';
+    setView('detail');
+    var back = $('[data-action="goto-library"]', $('#detailBody'));
+    if (back) back.focus();
+  }
+
+  function fillPlayer(c) {
+    var info = audioInfoFor(c);
+    var pill = !NATIVE ? '本地音频模式' : (info && info.exists ? '本地音轨' : '音轨未下载');
+    $('#playerStage').innerHTML = coverMarkup(c) + '<span class="stage-pill">' + pill + '</span>';
+    $('#playerTopic').textContent = topicsOf(c).join(' · ') || '未分类';
+    $('#playerTitle').textContent = c.title;
+    $('#playerBili').href = c.link;
+    $('#playerBili').dataset.action = 'open-bili';
+    $('#playerBili').dataset.link = c.link;
+    // 有本地音轨就以音轨真实时长为准；没有才退回合集设置的分钟数
+    var real = info && info.exists && info.duration ? info.duration / 1000 : 0;
+    if (real > 1) {
+      player.audioTotal = real;
+      if (!c.audioDuration || Math.abs(c.audioDuration - Math.round(real)) > 1) {
+        c.audioDuration = Math.round(real);
+        saveState();
+      }
+    }
+    var total = playerTotalSeconds();
+    seek.max = String(Math.round(total));
+    $('#playerTotal').textContent = player.audioTotal
+      ? ('共 ' + fmtClock(player.audioTotal))
+      : ('共 ' + c.duration + ' 分钟');
+    updatePlayerUI();
+  }
+
+  function startFocus(id) {
+    var c = getCollection(id);
+    if (!c) return;
+    if (player && player.collectionId !== id && player.elapsed > 0) {
+      var running = getCollection(player.collectionId);
+      openConfirm({
+        title: '还有一颗番茄在进行',
+        body: '「' + (running ? running.title : '当前合集') + '」已专注 ' + fmtClock(player.elapsed) + '。开始新的番茄会放弃这次进度。',
+        okLabel: '开始新的',
+        run: function () { beginFocus(id); }
+      });
+      return;
+    }
+    beginFocus(id);
+  }
+
+  function beginFocus(id) {
+    var c = getCollection(id);
+    if (!c) return;
+    if (view !== 'player') {
+      playerReturn = { view: view, tab: activeTab, detailId: detailId };
+    }
+    if (player && player.collectionId !== id) player = null;
+    if (!player) player = { collectionId: id, elapsed: 0, playing: true, audioTotal: 0 };
+    else player.playing = true;
+    player.restored = false;
+    player.anchorAt = 0;
+    player.audioTotal = (c.audioDuration || 0) || player.audioTotal || 0;
+    isSeeking = false;
+    fillPlayer(c);
+    setView('player');
+    $('#screen-player').scrollTop = 0;
+    updatePlayerUI();
+    syncPlayerAudio();
+    persistPlayer(true);
+    nativeFocus('playing');
+  }
+  function closePlayer() {
+    if (player && player.playing) toast('计时继续，随时可以回来');
+    var target = playerReturn || { view: 'home', tab: 'home', detailId: null };
+    if (target.view === 'detail' && target.detailId && getCollection(target.detailId)) {
+      detailId = target.detailId;
+      activeTab = 'library';
+      setView('detail');
+    } else {
+      activeTab = target.tab || 'home';
+      setView(activeTab);
+    }
+  }
+
+  function updatePlayerUI() {
+    if (!player) return;
+    var c = getCollection(player.collectionId);
+    if (!c) return;
+    var duration = playerTotalSeconds();
+    var remaining = Math.max(0, duration - player.elapsed);
+    $('#playerTime').textContent = fmtClock(remaining);
+    $('#playerElapsed').textContent = '已专注 ' + fmtClock(player.elapsed);
+    if (!isSeeking) seek.value = String(Math.min(player.elapsed, duration));
+    $('#playBtn').innerHTML = icon(player.playing ? 'pause' : 'play', player.playing ? 28 : 30);
+    $('#playBtn').setAttribute('aria-label', player.playing ? '暂停' : '播放');
+    var ticks = $$('#dialTicks line');
+    var active = Math.round((player.elapsed / duration) * 60);
+    ticks.forEach(function (line, index) {
+      line.classList.toggle('on', index < active);
+    });
+  }
+
+  function nudgePlayer(delta) {
+    if (!player) return;
+    var c = getCollection(player.collectionId);
+    if (!c) return;
+    var total = playerTotalSeconds();
+    player.elapsed = Math.min(total, Math.max(0, player.elapsed + delta));
+    player.anchorAt = 0;
+    if (playerAudioBvid && playerAudio) {
+      try { playerAudio.currentTime = player.elapsed; } catch (e) {}
+    }
+    updatePlayerUI();
+    persistPlayer(true);
+    if (player.elapsed >= total) finishFocus();
+  }
+
+  function tickPlayer() {
+    if (!player || !player.playing) return;
+    var c = getCollection(player.collectionId);
+    if (!c) { player = null; clearPlayerSnapshot(); return; }
+    var total = playerTotalSeconds();
+    persistPlayer(false);
+    // 本地音轨模式：进度只由真实音频位置驱动，音频播到哪番茄就走到哪。
+    // 不能用 paused 判断，因为缓冲瞬间音频也是 paused，
+    // 那样会掉回 JS 计时器，进度就和音频对不上了。
+    if (playerAudioBvid && playerAudio && isFinite(playerAudio.currentTime)) {
+      var t = Math.min(total, playerAudio.currentTime);
+      player.elapsed = t;
+      player.anchorAt = 0; // 有音轨时以音频为准，清掉时间戳锚点，免得切回去时算错
+      if (playerAudio.ended || t >= total - 0.35) {
+        player.elapsed = total;
+        player.playing = false;
+        try { playerAudio.pause(); } catch (e) {}
+        updatePlayerUI();
+        finishFocus();
+        return;
+      }
+      updatePlayerUI();
+      if (view === 'home') updateHeroLive();
+      return;
+    }
+    // 没有音轨（未下载/浏览器模式）：退回按真实时间算。
+    // 不能写成 elapsed += 1：WebView 切到后台后 setInterval 会被节流到
+    // 一分钟一次甚至更慢，那样专注 30 分钟实际只记到 10 分钟。
+    if (!player.anchorAt) {
+      player.anchorAt = Date.now();
+      player.anchorElapsed = player.elapsed;
+    }
+    player.elapsed = Math.min(total, player.anchorElapsed + (Date.now() - player.anchorAt) / 1000);
+    if (player.elapsed >= total) {
+      player.elapsed = total;
+      player.playing = false;
+      updatePlayerUI();
+      finishFocus();
+      return;
+    }
+    updatePlayerUI();
+    if (view === 'home') updateHeroLive();
+  }
+
+  function openDone(c) {
+    doneCollectionId = c.id;
+    $('#doneCollection').textContent = c.title;
+    // 本地音轨模式下展示真实专注时长（就是音轨长度），而不是合集的名义分钟数
+    var real = player && player.elapsed > 0 ? Math.round(player.elapsed) : 0;
+    var span = (player && player.audioTotal > 1 && real > 0)
+      ? fmtClock(real)
+      : (c.duration + ' 分钟');
+    $('#doneMeta').textContent = span + ' · ' + (topicsOf(c).join(' · ') || '未分类');
+    doneNote.value = '';
+    $$('#doneTags [data-action="toggle-tag"]').forEach(function (btn) { btn.setAttribute('aria-pressed', 'false'); });
+    if (!doneDialog.open) doneDialog.showModal();
+    requestAnimationFrame(function () { doneNote.focus(); });
+  }
+
+  function finishFocus() {
+    if (!player) return;
+    if (doneDialog && doneDialog.open) return;
+    var c = getCollection(player.collectionId);
+    if (!c) { player = null; setView('home'); return; }
+    player.playing = false;
+    updatePlayerUI();
+    persistPlayer(true);
+    stopPlayerAudio();
+    nativeFocus('stop');
+    openDone(c);
+  }
+
+  function saveDone(skip) {
+    var c = getCollection(doneCollectionId);
+    if (!c) { doneDialog.close(); return; }
+    var tags = skip ? [] : $$('#doneTags [data-action="toggle-tag"][aria-pressed="true"]').map(function (btn) { return btn.dataset.tag; });
+    var note = skip ? '' : doneNote.value.trim().slice(0, 140);
+    // 本地音轨模式下，本次专注的真实长度就是音轨长度（秒），
+    // 记录名义分钟数会让统计和实际不符。
+    var real = player && player.elapsed > 0 ? Math.round(player.elapsed) : 0;
+    var minutes = c.duration;
+    if (real > 0 && player && player.audioTotal > 1) {
+      minutes = Math.max(1, Math.round(real / 60));
+    }
+    state.sessions.push({
+      id: 's' + Date.now(),
+      collectionId: c.id,
+      at: new Date().toISOString(),
+      minutes: minutes,
+      seconds: real,
+      note: note,
+      tags: tags
+    });
+    saveState();
+    doneDialog.close();
+    stopPlayerAudio();
+    nativeFocus('stop');
+    player = null;
+    playerReturn = null;
+    clearPlayerSnapshot();
+    doneCollectionId = null;
+    activeTab = 'home';
+    setView('home');
+    toast('番茄已收下，今天第 ' + todaySessions().length + ' 颗');
+  }
+
+  function normalizeLink(value) {
+    var text = String(value || '').trim();
+    var bv = text.match(/BV[0-9A-Za-z]{10}/i);
+    if (bv) return 'https://www.bilibili.com/video/' + bv[0];
+    var av = text.match(/av(\d+)/i);
+    if (av) return 'https://www.bilibili.com/video/av' + av[1];
+    if (/^https?:\/\//i.test(text)) return text;
+    return 'https://' + text;
+  }
+
+  var TITLE_FALLBACK = '专注音乐合集';
+
+  function setTitleHint(message) {
+    var el = $('#collTitleHint');
+    if (!el) return;
+    el.textContent = message || '';
+    el.hidden = !message;
+  }
+
+  function setDurationHint(message) {
+    var el = $('#collDurationHint');
+    if (!el) return;
+    var text = message || '';
+    var minutes = Number(collDuration.value);
+    if (isFinite(minutes) && minutes > 0 && minutes < 5) {
+      text = text ? text + '；' : '';
+      text += '视频时长过短，可能导致专注时间过短';
+    }
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  function linkParts(value) {
+    var text = String(value || '');
+    var bv = text.match(/BV[0-9A-Za-z]{10}/i);
+    if (bv) return { bvid: 'BV' + bv[0].slice(2), aid: '' };
+    var av = text.match(/\bav(\d+)/i);
+    if (av) return { bvid: '', aid: av[1] };
+    return null;
+  }
+
+  function titleFromText(value) {
+    var text = String(value || '').replace(/https?:\/\/\S+/gi, ' ');
+    text = text.replace(/BV[0-9A-Za-z]{10}/gi, ' ').replace(/\bav\d+\b/gi, ' ');
+    text = text.replace(/^[\s【\[\(（「『《]+/, '').replace(/[\s】\]\)）」』》]+$/, '');
+    text = text.replace(/\s*[-—|·]\s*哔哩哔哩\s*$/i, '');
+    text = text.replace(/[\s\-—|·]+$/, '').replace(/\s+/g, ' ').trim();
+    if (text.length < 2) return '';
+    return text.slice(0, 40);
+  }
+
+  function fallbackTitle(parts) {
+    return parts && parts.bvid ? TITLE_FALLBACK + ' · ' + parts.bvid : TITLE_FALLBACK;
+  }
+
+  function fmtVideoLength(total) {
+    var s = Math.max(0, Math.round(total));
+    var h = Math.floor(s / 3600);
+    var m = Math.floor((s % 3600) / 60);
+    var sec = s % 60;
+    if (h) return h + ':' + pad(m) + ':' + pad(sec);
+    return m + ':' + pad(sec);
+  }
+
+  function applyVideoDuration(total) {
+    if (!durationAuto || !isFinite(total) || total <= 0) return;
+    var minutes = Math.round(total / 60);
+    var clamped = Math.min(300, Math.max(1, minutes));
+    collDuration.value = String(clamped);
+    setError('collDurationError', '');
+    var exact = fmtVideoLength(total);
+    if (minutes > 300) setDurationHint('视频 ' + exact + '，超上限，按 300 分钟');
+    else if (Math.round(total) % 60 === 0) setDurationHint('已按视频时长填入 ' + clamped + ' 分钟');
+    else setDurationHint('视频 ' + exact + '，已填 ' + clamped + ' 分钟');
+  }
+
+  function fetchVideoInfo(parts, token) {
+    var cbName = 'odBiliInfo' + token + '_' + Date.now().toString(36);
+    var script = document.createElement('script');
+    var settled = false;
+    var timer = setTimeout(function () { settle(null, 0); }, 6000);
+
+    function settle(title, seconds, pic) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (script.parentNode) script.parentNode.removeChild(script);
+      try { delete window[cbName]; } catch (err) { window[cbName] = undefined; }
+      if (token !== videoRequestId) return;
+      if (pic) {
+        setVideoCover(pic);
+        if (!coverManual) chooseCover('video');
+      }
+      if (titleAuto) {
+        if (title) {
+          collTitle.value = title.slice(0, 40);
+          setError('collTitleError', '');
+          setTitleHint('已自动填入视频标题，可修改');
+        } else {
+          if (!collTitle.value.trim()) collTitle.value = fallbackTitle(parts);
+          setTitleHint('没能读取到视频标题，已使用默认标题，可修改');
+        }
+      }
+      if (durationAuto) {
+        if (seconds > 0) applyVideoDuration(seconds);
+        else setDurationHint('读取失败，请手动填写时长');
+      }
+    }
+
+    window[cbName] = function (payload) {
+      var data = payload && payload.data ? payload.data : null;
+      var title = data && typeof data.title === 'string' ? data.title.replace(/\s+/g, ' ').trim() : '';
+      var seconds = data && typeof data.duration === 'number' ? data.duration : 0;
+      var pic = data && typeof data.pic === 'string' ? data.pic : '';
+      settle(title || null, seconds || 0, pic);
+    };
+    script.onerror = function () { settle(null, 0); };
+    script.async = true;
+    script.src = 'https://api.bilibili.com/x/web-interface/view?jsonp=jsonp&callback=' + cbName +
+      (parts.bvid ? '&bvid=' + encodeURIComponent(parts.bvid) : '&aid=' + encodeURIComponent(parts.aid));
+    document.head.appendChild(script);
+  }
+
+  function requestVideoInfo(force) {
+    var raw = collLink.value.trim();
+    if (!raw) return;
+    if (!force && raw === lastInfoLink) return;
+    lastInfoLink = raw;
+    videoRequestId += 1;
+    var token = videoRequestId;
+    var parts = linkParts(raw);
+
+    if (titleAuto) {
+      var guess = titleFromText(raw);
+      collTitle.value = guess || fallbackTitle(parts);
+      setError('collTitleError', '');
+      setTitleHint('正在读取视频信息…');
+    }
+    if (durationAuto) setDurationHint('正在读取视频时长…');
+
+    // App 内走原生：能解开 b23.tv 短链，也不受 CORS 限制
+    if (NATIVE && NATIVE.resolve) {
+      try {
+        NATIVE.resolve(raw, String(token));
+        return;
+      } catch (err) {}
+    }
+
+    if (!parts) {
+      if (/b23\.tv/i.test(raw)) {
+        if (titleAuto) {
+          var shortGuess = titleFromText(raw);
+          collTitle.value = shortGuess || fallbackTitle(null);
+          setTitleHint('b23.tv 短链接读不到视频信息，可手动修改标题和时长');
+        }
+        if (durationAuto) setDurationHint('b23.tv 短链接读不到视频时长，请手动填写');
+      }
+      return;
+    }
+    fetchVideoInfo(parts, token);
+  }
+
+  /** 原生解析完成回调（在 App 里才有）。 */
+  window.__potatoResolve = function (reqId, payload) {
+    if (String(reqId) !== String(videoRequestId)) return;
+    var data = null;
+    try { data = JSON.parse(payload); } catch (err) { data = null; }
+    if (!data || !data.ok) {
+      videoMeta = { bvid: (data && data.bvid) || '', cid: 0 };
+      if (titleAuto) setTitleHint((data && data.error) || '没能读取视频信息，可手动填写标题');
+      if (durationAuto) setDurationHint('读取失败，请手动填写时长');
+      return;
+    }
+    videoMeta = { bvid: data.bvid || '', cid: data.cid || 0 };
+    if (data.cover) {
+      setVideoCover(data.cover);
+      if (!coverManual) chooseCover('video');
+    }
+    if (titleAuto && data.title) {
+      collTitle.value = String(data.title).slice(0, 40);
+      setError('collTitleError', '');
+      setTitleHint('已自动填入视频标题，可修改');
+    }
+    if (durationAuto && data.duration > 0) applyVideoDuration(data.duration);
+  };
+
+  function setError(id, message) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message || '';
+    el.hidden = !message;
+  }
+
+  function validateLink() {
+    var value = collLink.value.trim();
+    if (!value) { setError('collLinkError', '请粘贴这个合集的 B 站视频链接。'); return false; }
+    var ok = /(bilibili\.com|b23\.tv|BV[0-9A-Za-z]{10}|av\d+)/i.test(value);
+    setError('collLinkError', ok ? '' : '没有识别到 B 站链接，请带上 BV 或 av 号。');
+    return ok;
+  }
+  function validateTitle() {
+    var value = collTitle.value.trim();
+    if (!value) { setError('collTitleError', '给这个合集起一个标题。'); return false; }
+    if (value.length > 40) { setError('collTitleError', '标题请控制在 40 个字以内。'); return false; }
+    setError('collTitleError', '');
+    return true;
+  }
+  function validateTopics() {
+    if (!selectedTopics.length) {
+      setError('collTopicsError', '至少选择一个主题。');
+      return false;
+    }
+    setError('collTopicsError', '');
+    return true;
+  }
+  function validateDuration() {
+    var value = collDuration.value.trim();
+    var n = Number(value);
+    if (!value || !isFinite(n) || Math.floor(n) !== n || n < 1 || n > 300) {
+      setError('collDurationError', '单次时长请填 1–300 的整数分钟。');
+      return false;
+    }
+    setError('collDurationError', '');
+    return true;
+  }
+
+  function chooseCover(id) {
+    if (id === 'video') {
+      if (!videoCoverUrl) return;
+    } else if (COVER_IDS.indexOf(id) < 0) {
+      return;
+    }
+    selectedCover = id;
+    $$('[data-action="choose-cover"]', collectionDialog).forEach(function (btn) {
+      btn.setAttribute('aria-pressed', String(btn.dataset.cover === id));
+    });
+  }
+
+  function setVideoCover(url) {
+    videoCoverUrl = normalizeCoverUrl(url);
+    var btn = $('#coverChoiceVideo');
+    var img = $('#coverVideoImg');
+    var sub = $('#coverVideoSub');
+    if (!btn || !img) return;
+    if (videoCoverUrl) {
+      img.src = videoCoverUrl;
+      img.hidden = false;
+      btn.classList.add('has-cover');
+      btn.disabled = false;
+      btn.setAttribute('aria-label', '使用视频封面');
+      if (sub) sub.textContent = '来自这个 B 站视频';
+    } else {
+      img.removeAttribute('src');
+      img.hidden = true;
+      btn.classList.remove('has-cover');
+      btn.disabled = true;
+      btn.setAttribute('aria-label', '视频封面（粘贴链接后可读取）');
+      if (sub) sub.textContent = '粘贴链接后自动读取';
+      if (selectedCover === 'video') selectedCover = 'night';
+    }
+  }
+
+  function renderTopicPicker() {
+    if (!collTopicPicker) return;
+    if (!state.topics.length) {
+      collTopicPicker.innerHTML = '<p class="topic-empty">还没有主题标签，请先在合集页点「编辑」添加。</p>';
+      return;
+    }
+    collTopicPicker.innerHTML = state.topics.map(function (t) {
+      return '<button class="chip" type="button" data-action="toggle-coll-topic" data-topic="' + esc(t) + '" aria-pressed="' + (selectedTopics.indexOf(t) >= 0) + '">' + esc(t) + '</button>';
+    }).join('');
+  }
+
+  function openCollectionDialog(id) {
+    editingId = id || null;
+    coverManual = false;
+    videoRequestId += 1;
+    lastInfoLink = '';
+    setTitleHint('');
+    setDurationHint('');
+    setError('collLinkError', '');
+    setError('collTitleError', '');
+    setError('collTopicsError', '');
+    setError('collDurationError', '');
+    if (id) {
+      var c = getCollection(id);
+      if (!c) return;
+      $('#collDialogTitle').textContent = '编辑合集';
+      collLink.value = c.link;
+      collTitle.value = c.title;
+      collDuration.value = String(c.duration);
+      selectedTopics = topicsOf(c).filter(function (t) { return state.topics.indexOf(t) >= 0; });
+      setVideoCover(c.coverUrl || '');
+      chooseCover(c.cover === 'video' && !c.coverUrl ? 'night' : c.cover);
+      titleBaseline = c.title;
+      titleAuto = true;
+      durationAuto = true;
+      lastInfoLink = c.link;
+      videoMeta = { bvid: bvidOf(c), cid: c.cid || 0 };
+      setDurationHint('');
+    } else {
+      $('#collDialogTitle').textContent = '添加合集';
+      collLink.value = '';
+      collTitle.value = TITLE_FALLBACK;
+      collDuration.value = '45';
+      selectedTopics = state.topics.indexOf('夜晚') >= 0 ? ['夜晚'] : (state.topics[0] ? [state.topics[0]] : []);
+      setVideoCover('');
+      chooseCover('night');
+      titleBaseline = TITLE_FALLBACK;
+      titleAuto = true;
+      durationAuto = true;
+      videoMeta = { bvid: '', cid: 0 };
+      setTitleHint('粘贴 B 站链接后会自动填入视频标题和时长');
+      setDurationHint('');
+    }
+    renderTopicPicker();
+    if (!collectionDialog.open) collectionDialog.showModal();
+    requestAnimationFrame(function () { collLink.focus(); });
+  }
+
+  function saveCollection() {
+    var okLink = validateLink();
+    var okTitle = validateTitle();
+    var okTopics = validateTopics();
+    var okDuration = validateDuration();
+    if (!okLink || !okTitle || !okTopics || !okDuration) {
+      if (!okLink) collLink.focus();
+      else if (!okTitle) collTitle.focus();
+      else if (!okTopics) {
+        var firstTopic = $('[data-action="toggle-coll-topic"]', collTopicPicker);
+        if (firstTopic) firstTopic.focus();
+      } else collDuration.focus();
+      return;
+    }
+    var savedLink = normalizeLink(collLink.value);
+    var linkPartsNow = linkParts(savedLink);
+    var savedBvid = videoMeta.bvid || (linkPartsNow ? linkPartsNow.bvid : '') || '';
+    // 短链解析出了 BV 号就存规范长链，「在 B 站打开」才能直接落到视频页
+    if (savedBvid) savedLink = 'https://www.bilibili.com/video/' + savedBvid;
+    var payload = {
+      title: collTitle.value.trim(),
+      topics: selectedTopics.slice(),
+      topic: selectedTopics[0] || '',
+      duration: parseInt(collDuration.value, 10),
+      cover: selectedCover,
+      coverUrl: videoCoverUrl,
+      link: savedLink,
+      bvid: savedBvid,
+      cid: videoMeta.cid || 0
+    };
+    var targetId = editingId;
+    if (editingId) {
+      var c = getCollection(editingId);
+      if (!c) return;
+      Object.assign(c, payload);
+      toast('合集已更新');
+    } else {
+      targetId = 'c' + Date.now();
+      state.collections.unshift(Object.assign({ id: targetId, createdAt: new Date().toISOString() }, payload));
+      toast('已添加合集');
+    }
+    saveState();
+    collectionDialog.close();
+    // 新加合集顺手把音轨拉到本地，之后点开就能离线听
+    var addedNew = !editingId;
+    if (addedNew && payload.bvid && NATIVE && NATIVE.downloadAudio) {
+      var existing = audioInfoOf(payload.bvid, payload.cid);
+      if (!existing || !existing.exists) {
+        audioProgress[targetId] = 0;
+        try { NATIVE.downloadAudio(payload.bvid, String(payload.cid || 0), targetId); } catch (err) { delete audioProgress[targetId]; }
+        toast('已添加合集，音轨正在下载');
+      }
+    }
+    refreshAll();
+    requestAnimationFrame(function () {
+      if (view === 'detail') {
+        var editBtn = $('[data-action="edit-collection"]');
+        if (editBtn) editBtn.focus();
+      } else {
+        var card = $('[data-action="open-collection"][data-id="' + targetId + '"]');
+        if (card) card.focus();
+        else {
+          var addBtn = $('[data-action="add-collection"]');
+          if (addBtn) addBtn.focus();
+        }
+      }
+    });
+  }
+
+  function renderTopicManager() {
+    if (!topicManageList) return;
+    if (!state.topics.length) {
+      topicManageList.innerHTML = '<li class="topic-manage-empty">还没有主题标签，在下面输入名称开始添加。</li>';
+      return;
+    }
+    topicManageList.innerHTML = state.topics.map(function (t, i) {
+      var used = state.collections.filter(function (c) { return topicsOf(c).indexOf(t) >= 0; }).length;
+      return '<li class="topic-row">' +
+        '<span class="topic-order">' + (i + 1) + '</span>' +
+        '<span class="topic-info">' +
+          '<span class="topic-name">' + esc(t) + '</span>' +
+          '<span class="topic-count">' + (used ? used + ' 个合集' : '未使用') + '</span>' +
+        '</span>' +
+        '<span class="topic-row-actions">' +
+          '<button class="icon-btn sm" type="button" data-action="topic-up" data-topic="' + esc(t) + '" aria-label="上移主题：' + esc(t) + '"' + (i === 0 ? ' disabled' : '') + '>' + icon('up', 17) + '</button>' +
+          '<button class="icon-btn sm" type="button" data-action="topic-down" data-topic="' + esc(t) + '" aria-label="下移主题：' + esc(t) + '"' + (i === state.topics.length - 1 ? ' disabled' : '') + '>' + icon('down', 17) + '</button>' +
+          '<button class="icon-btn sm" type="button" data-action="topic-delete" data-topic="' + esc(t) + '" aria-label="删除主题：' + esc(t) + '">' + icon('trash', 17) + '</button>' +
+        '</span>' +
+      '</li>';
+    }).join('');
+  }
+
+  function openTopicDialog() {
+    setError('topicNewError', '');
+    if (topicNew) topicNew.value = '';
+    renderTopicManager();
+    if (!topicDialog.open) topicDialog.showModal();
+    requestAnimationFrame(function () { if (topicNew) topicNew.focus(); });
+  }
+
+  function syncTopicViews() {
+    saveState();
+    buildChips();
+    renderTopicManager();
+    refreshAll();
+  }
+
+  function moveTopic(name, delta) {
+    var i = state.topics.indexOf(name);
+    var j = i + delta;
+    if (i < 0 || j < 0 || j >= state.topics.length) return;
+    var tmp = state.topics[i];
+    state.topics[i] = state.topics[j];
+    state.topics[j] = tmp;
+    state.collections.forEach(function (c) {
+      var list = topicsOf(c).sort(function (a, b) { return state.topics.indexOf(a) - state.topics.indexOf(b); });
+      c.topics = list;
+      c.topic = list[0] || '';
+    });
+    syncTopicViews();
+    requestAnimationFrame(function () {
+      $$('[data-action="' + (delta < 0 ? 'topic-up' : 'topic-down') + '"]', topicManageList).forEach(function (btn) {
+        if (btn.dataset.topic === name && !btn.disabled) btn.focus();
+      });
+    });
+  }
+
+  function deleteTopic(name) {
+    var used = state.collections.filter(function (c) { return topicsOf(c).indexOf(name) >= 0; }).length;
+    openConfirm({
+      title: '删除这个主题？',
+      body: '「' + name + '」' + (used ? '会从 ' + used + ' 个合集中移除。' : '还没有被任何合集使用。'),
+      okLabel: '删除',
+      danger: true,
+      run: function () {
+        state.topics = state.topics.filter(function (t) { return t !== name; });
+        state.collections.forEach(function (c) {
+          var list = topicsOf(c).filter(function (t) { return t !== name; });
+          c.topics = list;
+          c.topic = list[0] || '';
+        });
+        selectedTopics = selectedTopics.filter(function (t) { return t !== name; });
+        if (libFilter === name) libFilter = '全部';
+        syncTopicViews();
+        toast('已删除主题「' + name + '」');
+      }
+    });
+  }
+
+  function addTopic() {
+    if (!topicNew) return;
+    var name = topicNew.value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      setError('topicNewError', '输入一个主题名称。');
+      topicNew.focus();
+      return;
+    }
+    if (name.length > 10) {
+      setError('topicNewError', '主题名称请控制在 10 个字以内。');
+      topicNew.focus();
+      return;
+    }
+    if (state.topics.indexOf(name) >= 0) {
+      setError('topicNewError', '「' + name + '」已经存在。');
+      topicNew.focus();
+      return;
+    }
+    state.topics.push(name);
+    topicNew.value = '';
+    setError('topicNewError', '');
+    syncTopicViews();
+    toast('已添加主题「' + name + '」');
+    requestAnimationFrame(function () { topicNew.focus(); });
+  }
+
+  function openConfirm(config) {
+    pendingConfirm = config;
+    $('#confirmTitle').textContent = config.title;
+    $('#confirmText').textContent = config.body;
+    var ok = $('#confirmOk');
+    ok.textContent = config.okLabel || '确认';
+    ok.className = 'btn ' + (config.danger ? 'danger' : 'btn-primary');
+    if (!confirmDialog.open) confirmDialog.showModal();
+    requestAnimationFrame(function () {
+      var no = $('[data-action="confirm-no"]', confirmDialog);
+      if (no) no.focus();
+    });
+  }
+
+  function requestDelete(id) {
+    var c = getCollection(id);
+    if (!c) return;
+    var count = sessionsOf(id).length;
+    openConfirm({
+      title: '删除这个合集？',
+      body: '「' + c.title + '」和它的 ' + count + ' 条专注记录会一起移除，无法恢复。',
+      okLabel: '删除合集',
+      danger: true,
+      run: function () {
+        state.collections = state.collections.filter(function (item) { return item.id !== id; });
+        state.sessions = state.sessions.filter(function (s) { return s.collectionId !== id; });
+        if (player && player.collectionId === id) { player = null; clearPlayerSnapshot(); nativeFocus('stop'); }
+        if (detailId === id) detailId = null;
+        saveState();
+        activeTab = 'library';
+        setView('library');
+        toast('合集已删除');
+      }
+    });
+  }
+
+  function requestReset() {
+    openConfirm({
+      title: '恢复演示数据？',
+      body: '会清除当前所有合集与专注记录，并恢复 6 个演示合集。此操作无法撤销。',
+      okLabel: '恢复演示数据',
+      danger: true,
+      run: function () {
+        var theme = state.theme;
+        var profile = state.profile;
+        state = normalizeState(seedState());
+        state.theme = theme;
+        if (profile) state.profile = profile;
+        saveState();
+        applyTheme();
+        buildChips();
+        stopPlayerAudio();
+        nativeFocus('stop');
+        player = null;
+        playerReturn = null;
+        clearPlayerSnapshot();
+        detailId = null;
+        activeTab = 'home';
+        setView('home');
+        toast('已恢复演示数据');
+      }
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    var el = event.target.closest('[data-action]');
+    if (!el) return;
+    var action = el.dataset.action;
+
+    if (action === 'goto-library') {
+      activeTab = 'library';
+      detailId = null;
+      setView('library');
+      return;
+    }
+    if (action === 'open-collection') {
+      openDetail(el.dataset.id);
+      return;
+    }
+    if (action === 'open-bili') {
+      // App 里交给原生：装了 B 站直接进 App，没装才走浏览器
+      if (NATIVE && NATIVE.openBili) {
+        event.preventDefault();
+        try { NATIVE.openBili(el.dataset.link || el.getAttribute('href') || ''); } catch (err) {}
+      }
+      return;
+    }
+    if (action === 'download-audio') {
+      startAudioDownload(el.dataset.id);
+      return;
+    }
+    if (action === 'delete-audio') {
+      removeAudio(el.dataset.id);
+      return;
+    }
+    if (action === 'start-focus') {
+      startFocus(el.dataset.id);
+      return;
+    }
+    if (action === 'add-collection') {
+      openCollectionDialog(null);
+      return;
+    }
+    if (action === 'edit-collection') {
+      openCollectionDialog(el.dataset.id);
+      return;
+    }
+    if (action === 'delete-collection') {
+      requestDelete(el.dataset.id);
+      return;
+    }
+    if (action === 'close-player') {
+      closePlayer();
+      return;
+    }
+    if (action === 'toggle-play') {
+      if (!player) return;
+      var c = getCollection(player.collectionId);
+      if (!c) return;
+      if (player.elapsed >= playerTotalSeconds()) return;
+      player.playing = !player.playing;
+      player.anchorAt = 0;
+      updatePlayerUI();
+      syncPlayerAudio();
+      persistPlayer(true);
+      // 暂停时不停服务，只改通知文案，避免反复起停被系统限流
+      nativeFocus(player.playing ? 'playing' : 'paused');
+      return;
+    }
+    if (action === 'rewind') {
+      nudgePlayer(-15);
+      return;
+    }
+    if (action === 'forward') {
+      nudgePlayer(15);
+      return;
+    }
+    if (action === 'done-save') {
+      saveDone(false);
+      return;
+    }
+    if (action === 'done-skip') {
+      saveDone(true);
+      return;
+    }
+    if (action === 'toggle-tag') {
+      el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      return;
+    }
+    if (action === 'choose-cover') {
+      coverManual = true;
+      chooseCover(el.dataset.cover);
+      return;
+    }
+    if (action === 'toggle-coll-topic') {
+      var picked = el.dataset.topic;
+      var at = selectedTopics.indexOf(picked);
+      if (at >= 0) selectedTopics.splice(at, 1);
+      else {
+        selectedTopics.push(picked);
+        selectedTopics.sort(function (a, b) { return state.topics.indexOf(a) - state.topics.indexOf(b); });
+      }
+      el.setAttribute('aria-pressed', String(at < 0));
+      setError('collTopicsError', '');
+      if (!coverManual && !videoCoverUrl && selectedTopics.length) {
+        chooseCover(COVER_BY_TOPIC[selectedTopics[0]] || 'night');
+      }
+      return;
+    }
+    if (action === 'edit-topics') {
+      openTopicDialog();
+      return;
+    }
+    if (action === 'edit-profile') {
+      openProfileDialog();
+      return;
+    }
+    if (action === 'pick-avatar') {
+      avatarInput.click();
+      return;
+    }
+    if (action === 'reset-avatar') {
+      pendingAvatar = '';
+      avatarInput.value = '';
+      updateAvatarPreview();
+      setAvatarHint('已恢复默认头像，保存后生效。');
+      return;
+    }
+    if (action === 'save-profile') {
+      saveProfile();
+      return;
+    }
+    if (action === 'topic-up') {
+      moveTopic(el.dataset.topic, -1);
+      return;
+    }
+    if (action === 'topic-down') {
+      moveTopic(el.dataset.topic, 1);
+      return;
+    }
+    if (action === 'topic-delete') {
+      deleteTopic(el.dataset.topic);
+      return;
+    }
+    if (action === 'topic-add') {
+      addTopic();
+      return;
+    }
+    if (action === 'save-collection') {
+      saveCollection();
+      return;
+    }
+    if (action === 'close-dialog') {
+      var dialogEl = document.getElementById(el.dataset.target);
+      if (dialogEl && dialogEl.open) dialogEl.close();
+      return;
+    }
+    if (action === 'set-theme') {
+      var nextTheme = el.dataset.themeName;
+      if (!THEMES.some(function (t) { return t[0] === nextTheme; })) return;
+      state.theme = nextTheme;
+      applyTheme();
+      saveState();
+      $$('[data-action="set-theme"]').forEach(function (btn) {
+        btn.setAttribute('aria-pressed', String(btn.dataset.themeName === nextTheme));
+      });
+      var label = THEMES.filter(function (t) { return t[0] === nextTheme; })[0][1];
+      toast('已切换为' + label + '主题');
+      return;
+    }
+    if (action === 'set-topic') {
+      libFilter = el.dataset.topic;
+      renderLibrary();
+      return;
+    }
+    if (action === 'clear-search') {
+      libQuery = '';
+      libSearch.value = '';
+      renderLibrary();
+      libSearch.focus();
+      return;
+    }
+    if (action === 'reset-data') {
+      requestReset();
+      return;
+    }
+    if (action === 'confirm-no') {
+      pendingConfirm = null;
+      confirmDialog.close();
+      return;
+    }
+    if (action === 'confirm-yes') {
+      var run = pendingConfirm && pendingConfirm.run;
+      pendingConfirm = null;
+      confirmDialog.close();
+      if (run) run();
+      return;
+    }
+  });
+
+  $('#tabbar').addEventListener('click', function (event) {
+    var btn = event.target.closest('[data-nav]');
+    if (!btn) return;
+    switchTab(btn.dataset.nav);
+  });
+
+  libSearch.addEventListener('input', function () {
+    libQuery = libSearch.value;
+    renderLibrary();
+  });
+
+  libSort.addEventListener('change', function () {
+    libSortBy = libSort.value;
+    renderLibrary();
+  });
+
+  seek.addEventListener('input', function () {
+    if (!player) return;
+    isSeeking = true;
+    player.elapsed = Number(seek.value);
+    updatePlayerUI();
+  });
+  seek.addEventListener('change', function () {
+    isSeeking = false;
+    if (!player) return;
+    var c = getCollection(player.collectionId);
+    var total = playerTotalSeconds();
+    if (playerAudioBvid && playerAudio) {
+      try { playerAudio.currentTime = player.elapsed; } catch (e) {}
+    }
+    player.anchorAt = 0;
+    persistPlayer(true);
+    if (c && player.elapsed >= total) finishFocus();
+    updatePlayerUI();
+  });
+
+  doneDialog.addEventListener('cancel', function (event) { event.preventDefault(); });
+  profileDialog.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' || event.target.tagName !== 'INPUT') return;
+    event.preventDefault();
+    saveProfile();
+  });
+  collectionDialog.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter') return;
+    var tag = event.target.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT') {
+      event.preventDefault();
+      saveCollection();
+    }
+  });
+
+  topicNew.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    addTopic();
+  });
+  topicNew.addEventListener('input', function () { setError('topicNewError', ''); });
+  avatarInput.addEventListener('change', function () {
+    handleAvatarFile(this.files && this.files[0]);
+    this.value = '';
+  });
+  profileNickname.addEventListener('input', function () { setError('profileNicknameError', ''); });
+  collLink.addEventListener('blur', function () {
+    if (!collLink.value.trim()) return;
+    clearTimeout(titleLinkTimer);
+    validateLink();
+    requestVideoInfo();
+  });
+  collTitle.addEventListener('blur', function () {
+    if (collTitle.value.trim()) validateTitle();
+  });
+  collDuration.addEventListener('blur', function () {
+    if (collDuration.value.trim()) validateDuration();
+  });
+  collLink.addEventListener('input', function () {
+    setError('collLinkError', '');
+    clearTimeout(titleLinkTimer);
+    titleLinkTimer = setTimeout(requestVideoInfo, 400);
+  });
+  collTitle.addEventListener('input', function () {
+    setError('collTitleError', '');
+    var value = collTitle.value.trim();
+    if (value === '' || value === titleBaseline) {
+      if (!titleAuto) {
+        titleAuto = true;
+        setTitleHint('可粘贴链接自动填入标题');
+      }
+      return;
+    }
+    titleAuto = false;
+    setTitleHint('');
+  });
+  collDuration.addEventListener('input', function () {
+    setError('collDurationError', '');
+    var value = collDuration.value.trim();
+    durationAuto = value === '';
+    setDurationHint('');
+  });
+  collectionDialog.addEventListener('close', function () {
+    clearTimeout(titleLinkTimer);
+    videoRequestId += 1;
+  });
+
+  function updateClock() {
+    var now = new Date();
+    var clock = document.querySelector('.status-time');
+    if (clock) clock.textContent = now.getHours() + ':' + pad(now.getMinutes());
+  }
+
+  buildChrome();
+  buildChips();
+  buildTicks();
+  applyTheme();
+  // 先把上次没走完的番茄接回来，首页就能直接显示「已专注 xx」
+  var restoredFocus = restorePlayer();
+  setView('home');
+  updateClock();
+  saveState();
+  setInterval(updateClock, 30000);
+  setInterval(function () {
+    if (player && player.playing && !doneDialog.open) tickPlayer();
+  }, 1000);
+  // 切后台 / 页面要卸载时立刻落一次盘，不用等 5 秒的节流窗口
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') persistPlayer(true);
+  });
+  window.addEventListener('pagehide', function () { persistPlayer(true); });
+  if (restoredFocus) afterRestore();
+
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
